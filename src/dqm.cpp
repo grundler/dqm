@@ -26,7 +26,7 @@ using namespace std;
 using namespace boost::filesystem;
 
 int main(int argc, char** argv) {
-  string data_dir;
+  // string data_dir;
   void setTDRStyle(); 
   RootWContent* procCluster(string base_name, int id, TFile *f, bool verbose=false); 
   RootWContent* procConvert(string base_name, int id, TFile *f, bool verbose=false); 
@@ -38,35 +38,35 @@ int main(int argc, char** argv) {
   string get_id_str(int id); 
   char* get_dir_name(string base_name, string id_str="", string suffix=""); 
 
-  if (argc == 2){
-    data_dir = argv[1];
+  string board_name, run_number;
+  if (argc > 2){
+    board_name = argv[1];
+    run_number = argv[2];
   }
-  
   else {
     // cout << "usage: " << argv[0] << " data/000003" << endl;    
-    cout << "usage: " << argv[0] << " 030623/PixelTestBoard1" << endl;    
+    cout << "usage: " << argv[0] << " PixelTestBoard1 030623 [jobtype]" << endl;    
   }
   
-  size_t idx = data_dir.find("/");
+  //size_t idx = data_dir.find("/");
   // string data_type = data_dir.substr(0, idx);
   // string run_number = data_dir.substr(idx+1);
 
-  string run_number = data_dir.substr(0, idx); 
-  string board_name = data_dir.substr(idx+1);
+  // string run_number = data_dir.substr(0, idx); 
+  // string board_name = data_dir.substr(idx+1);
 
   
   // ---------------------------------------------------------
   // Get the root files 
   // ---------------------------------------------------------
   
-  TString convert_file = data_dir + "/" + run_number + "-convert.root";
-  TString clusters_file = data_dir + "/" + run_number + "-clustering.root";
+  TString convert_file = board_name + "/" + run_number + "-convert.root";
+  TString clusters_file = board_name + "/" + run_number + "-clustering.root";
 
   // cout << "cluster file: " << clusters_file << endl; 
   // TString tracks_file = data_dir + "/" + run_number + "-tracks.root";
-  TString tracks_noalign_file = data_dir + "/" + run_number + "-tracks_noalign.root";
+  TString tracks_noalign_file = board_name + "/" + run_number + "-tracks_noalign.root";
   
-
   TFile *f = new TFile(clusters_file);  
   
   // TFile *f2 = new TFile(tracks_file);
@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
 
   RootWSite* mySite = new RootWSite();
   mySite->setTitle("Test Beam DQM");
-  mySite->setComment(data_dir);
+  mySite->setComment(board_name+string("/")+run_number);
   mySite->setCommentLink("../");
   mySite->addAuthor("Stefano Mersi");
   mySite->addAuthor("Xin Shi");
@@ -283,7 +283,7 @@ int main(int argc, char** argv) {
   // ---------------------------------------------------------
   // 5. Making Check Data Integrity page  
   // ---------------------------------------------------------
-  string datafile = string(data_dir) + string("/") + string("chk_dat.txt");
+  string datafile = string(board_name) + string("/") + string(run_number) + string("chk_dat.txt");
 
 
   RootWPage* myPage5 = NULL ; 
@@ -318,7 +318,7 @@ int main(int argc, char** argv) {
   // make the full data_check file link 
   
   
-  string datafile_ful = string(data_dir) + string("/") + 
+  string datafile_ful = string(board_name) + string("/") + string(run_number) + 
     string("check_data_integrity.txt");
   
   if ( boost::filesystem::exists( datafile_ful ) ) { 
