@@ -23,7 +23,7 @@ using namespace std;
 
 #define THUMBSMALLSIZE 120
 #define DEFAULTPROGRAMNAME "Test Beam DQM"
-#define DEFAULTPROGRAMSITE "mailto:Xin.Shi@cern.ch"
+#define DEFAULTPROGRAMSITE "mailto:grundler@cern.ch"
 // The following is a list of allowed file etensions for TCanvas::SaveAs
 // It should be separated, start and end with '|'
 #define DEFAULTALLOWEDEXTENSIONS "|C|png|gif|svg|root|eps|pdf|ps|"
