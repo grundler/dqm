@@ -37,16 +37,22 @@ dataset = 'FNAL2013'
 eosdir = 'eos/cms/store/cmst3/group/tracktb/'+dataset
 datadir = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/data/'+dataset
 dbdir = datadir+'/.db/'
-begin_valid_run = 37000
-end_valid_run = 50001
+#begin_valid_run = 37000
+#end_valid_run = 50001
+env_file = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/dqm/fnal201403/setup.sh'
+histdir = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/jobsub/fnal201403/histograms'
 
 daqdir = '' #will be set when eos mounted
 
 max_submissions = 5
 submission_script = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/jobsub/fnal201403/scripts/submitBatch.sh'
 
-STATUS = ['submitted', 'finished'] #prefix indicating job has been submitted or finished, keep in order of steps for process
-JOB = ('hits', 'tracks') #prefix indicating what kind of job (conversion/clustering/hitmaker) or tracks, keep in order they need to be submitted
+class STATUS:
+	  unknown, submitted, returned, published, nStatus = range(-1,4)
+	  prefix = ['submitted', 'returned', 'published', 'unknown']
+	  colors = ['aqua', 'teal' , 'green', 'white']
+
+JOB = ('hits', ) # 'tracks') #prefix indicating what kind of job (conversion/clustering/hitmaker) or tracks, keep in order they need to be submitted
 
 debug = False 
 #debug = True 
@@ -113,8 +119,6 @@ def default(arg=None):
 
 	#loop over all the runs we found
 	for run in runs:
-		if run == 35197:
-		   continue
 		if submissions >= max_submissions:
 		   break
 		datfile = get_datfile(run)
@@ -130,16 +134,19 @@ def default(arg=None):
 			#check status of processing
 			for job in JOB:
 				status = get_job_status(job, dat)
-				sys.stdout.write('For run %s, board %s: the %s job is %s\n' %(run,board,job,status))
-				if status is STATUS[-1]:
+				sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,job,STATUS.prefix[status]))
+				if status is STATUS.published:
 				   sys.stdout.write('Nothing more to do for this job, moving on\n')
 				   continue #continue to next job
-				elif status in STATUS:
+				elif status is STATUS.returned:
+					 sys.stdout.write('Job returned. Publishing\n')
+					 publish(dat, job, run, board)
+				elif status is STATUS.submitted:
 					sys.stdout.write('Waiting for job to finish processing\n')
 					break #can't go on with this run until this job is done
 				else:
 					#Need to submit the job
-					exitcode = submit_job(job, run, dat)
+					exitcode = submit_job(job, run, dat, test=True)
 					if 0==exitcode:
 					    submissions += 1
 					else:
@@ -149,14 +156,15 @@ def default(arg=None):
 	#finish up
 	umount_eos()
 
+	index(arg)
 	sys.stdout.write('Submitted %s jobs\n' % submissions)
 
 ####
 
 def get_job_status(job, file):
-	status = 'unknown'
-	for st in STATUS:
-		fullname = os.path.join(dbdir,'.'+st+'.'+job+'.'+file)
+	status = STATUS.unknown
+	for st in range(STATUS.nStatus):
+		fullname = os.path.join(dbdir,'.'+STATUS.prefix[st]+'.'+job+'.'+file)
 		if os.path.isfile(fullname):
 		    status = st
 	return status
@@ -227,8 +235,7 @@ def proc_cmd(cmd, test=False, verbose=1, procdir=None, env=os.environ):
     if procdir != None:
         os.chdir(procdir)
 
-    process = subprocess.Popen(cmd.split(), 
-                               stdout=subprocess.PIPE, env=env)
+    process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, env=env)
     process.wait()
     stdout = process.communicate()[0]
     if 'error' in stdout:
@@ -244,29 +251,16 @@ def get_board(dat):
         board = name 
     return board 
 
-def ln_dat(run, board, dat, force=False):
-	dstdir = get_rundir(run, board) 
-	if os.path.exists(dstdir) and not force: 
-	   sys.stdout.write('Skip linking %s_%s.\n' %( run, board))
-	   return 
-
-	cmd = "mkdir -p %s; cd %s" %(dstdir,dstdir) 
-	proc_cmd(cmd)
-
-	srcfile = os.path.join(datadir, eosdir, str(run), dat)
-	cmd = 'ln -s %s .; cd -' %(srcfile)
-	output = proc_cmd(cmd)
-
 def submit_job(job, run, file, test=False):
 	code = 0
 	if test:
 	   sys.stdout.write('Here we submit %s job for run %s on %s file\n' % (job, run, file))
-	   f = os.path.join(dbdir, '.'+STATUS[0]+'.'+job+'.'+file)
+	   f = os.path.join(dbdir, '.'+STATUS.prefix[STATUS.submitted]+'.'+job+'.'+file)
 	   open(f,'a').close()
 	   return code
 
 	#First, make sure no other process tries to submit
-	f = os.path.join(dbdir, '.'+STATUS[0]+'.'+job+'.'+file)
+	f = os.path.join(dbdir, '.'+STATUS.prefix[STATUS.submitted]+'.'+job+'.'+file)
 	open(f,'a').close()
 
 	#Actually do the submission
@@ -286,6 +280,178 @@ def get_filesize(f):
         raise NameError(output)
     size = int(size)
     return size 
+
+
+def ln_dat(run, board, dat, force=False):
+	dstdir = get_rundir(run, board) 
+	if os.path.exists(dstdir) and not force: 
+	   sys.stdout.write('Skip linking %s_%s.\n' %( run, board))
+	   return 
+
+	cmd = "mkdir -p %s; cd %s" %(dstdir,dstdir) 
+	proc_cmd(cmd)
+
+	srcfile = os.path.join(datadir, eosdir, str(run), dat)
+	cmd = 'ln -s %s .; cd -' %(srcfile)
+	output = proc_cmd(cmd)
+
+def publish(fname, job, run, board):                                                                                
+    sys.stdout.write('[pub_dqm] run %s ... ' % run)
+    sys.stdout.flush()
+
+    #procenv = source_bash(env_file)
+
+    cmd = 'dqm %s %s' %(board, str(run).zfill(6))
+
+    insert_in_db(fname, job, STATUS.published)
+    output = proc_cmd(cmd, procdir=histdir)#, env=procenv)
+    print output
+    sys.stdout.write(' OK.\n')
+    
+def source_bash(f):
+	pipe = subprocess.Popen(". %s; env" % f, stdout=subprocess.PIPE, shell=True)
+	output = pipe.communicate()[0]
+	#env = dict((line.split("=", 1) for line in output.splitlines()))
+	env = {}
+	for line in output.splitlines():
+		items = line.split("=", 1)
+		if len(items) < 2:
+		   continue
+
+		env[items[0]]= items[1]
+	return env
+
+def insert_in_db(basename, job, status):
+	f = os.path.join(dbdir, '.'+STATUS.prefix[status]+'.'+job+'.'+basename)
+	open(f, 'a').close()
+
+def index(arg): 
+	sys.stdout.write('[make index] ... ')
+	sys.stdout.flush()
+	procenv = source_bash(env_file)
+	#sys.stdout.write('procenv: %s\n' % procenv)
+	targetdir = procenv['TARGETDIRECTORY']
+    
+	runs = []
+	#data = []
+	run_status = {}
+	cmd = 'ls -A %s' % dbdir
+	output = proc_cmd(cmd)
+	for line in output.split():
+		# #submission is the first bit of info we have
+		# if line.split('.')[1] is STATUS.prefix[STATUS.submitted]:
+		run, board, job, status = parse_db(line)
+		sys.stdout.write('%s %s %s %s\n' % (run, board, job, status))
+	    #data.append((run,board,job,status))
+		if run not in runs:
+		   runs.append(run)
+		   #run_status[run] = {}
+		   #run_status[run]['PixelTestBoard1'] = {}
+		   #run_status[run]['PixelTestBoard2'] = {}
+		label = str(run)+'_'+board
+		if (label) not in run_status:
+		   run_status[label] = {}
+		#if job not in run_status[run][board] or run_status[run][board][job] < status:
+		#   run_status[run][board][job] = status
+		sys.stdout.write('job %s run_status %s\n' % (job, run_status[label]))
+		if job not in run_status[label] or run_status[label][job] < status:
+		   run_status[label][job] = status
+
+	runs = sorted(runs, reverse=True)
+
+	header_row = ['Run']
+	header_row.extend(JOB)
+	#header_row.extend(['PixelTestBoard1']*len(JOB))
+	#header_row.extend(['PixelTestBoard2']*len(JOB))
+	t = HTML.Table(header_row=header_row)
+	#secondrow = ['']
+	#for board in ['PixelTestBoard1', 'PixelTestBoard2']:
+	#	for job in JOB:
+	#		secondrow.append(job)
+	#t.rows.append(secondrow)
+	for run_board in sorted(run_status, reverse=True):
+		run_link = HTML.link(run_board, '%s' %run_board)
+		row = [run_link]
+
+		for job in JOB:
+			color = STATUS.colors[run_status[run_board][job]]
+			colored_result = HTML.TableCell(STATUS.prefix[run_status[run_board][job]], bgcolor=color)
+			row.append(colored_result)
+		t.rows.append(row)
+    
+	htmlcode = str(t)
+
+	html_header = '''<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>Test Beam DQM - clusters</title>
+    <meta name="keywords" content="CERN CMS tracker upgrade" />
+    <meta name="description" content="CMS Tracker upgrade summary page" />
+    <link href=".style/default.css" rel="stylesheet" type="text/css" />
+    <link rel="shortcut icon" type="image/x-icon" href=".style/images/favicon.ico">
+ </head>
+  <body>
+      <div id="header">
+    <h1>
+    <a href="index.html">%s Test Beam DQM</a>
+    </h1>
+    </div>
+    <div id="content">
+    ''' % dataset 
+
+	html_footer = '''<div id="footer">
+    <p>Page created on %s </p>
+    <p>&copy; <a href="mailto:Xin.Shi@cern.ch"> Xin Shi</a> 2013 </p>
+    </div>
+    </div>
+    </body>
+    </html>''' %  time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime())
+    
+
+	index = os.path.join(targetdir, 'index.html')
+	#index = os.path.join(targetdir, 'index2.html')
+	fo = open(index, 'w')
+	fo.write(html_header)
+	fo.write(htmlcode)
+	fo.write(html_footer)
+	fo.close()
+	sys.stdout.write(' OK.\n')
+
+def parse_db(dat):
+	status = STATUS.unknown
+	job = 'unknown'
+	board = 'unknown'
+	run = 0
+
+	a = dat.lstrip('.') #remove leading '.'
+	b = a.split('.') #split rest of string up
+	#for s in b:
+	#	sys.stdout.write('%s\t' % s)
+
+	#Get status
+	st = b[0]
+	sys.stdout.write('st=%s\n' % st)
+	for i in range(STATUS.nStatus):
+		sys.stdout.write('testing %s:%s\t' % (i, STATUS.prefix[i]))
+		if st == STATUS.prefix[i]:
+		   sys.stdout.write('got it\t')
+		   status = i
+	sys.stdout.write('\n')
+
+	#Get job
+	if b[1] in JOB:
+	   job = b[1]
+
+	#Get board
+	c = b[2].split('_spill_')
+	if 'PixelTestBoard' in c[0]:
+	   board = c[0]
+
+	#Get run
+	run = c[1].split('_')[0]
+	run = run.zfill(6)
+
+	return (run, board, job, status)
 
 ####
 
