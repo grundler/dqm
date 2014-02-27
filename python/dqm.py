@@ -135,13 +135,13 @@ def default(arg=None):
 			for job in JOB:
 				status = get_job_status(job, dat)
 				sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,job,STATUS.prefix[status]))
-				if status is STATUS.published:
+				if status == STATUS.published:
 				   sys.stdout.write('Nothing more to do for this job, moving on\n')
 				   continue #continue to next job
-				elif status is STATUS.returned:
+				elif status == STATUS.returned:
 					 sys.stdout.write('Job returned. Publishing\n')
 					 publish(dat, job, run, board)
-				elif status is STATUS.submitted:
+				elif status == STATUS.submitted:
 					sys.stdout.write('Waiting for job to finish processing\n')
 					break #can't go on with this run until this job is done
 				else:
@@ -196,8 +196,8 @@ def get_runs_from_ls(output):
 
     return runs
 
-def mount_eos():
-	cmd = '%s -b fuse mount %s/eos' % (eos, datadir)
+def mount_eos(mount_point=datadir):
+	cmd = '%s -b fuse mount %s/eos' % (eos, mount_point)
 	output = proc_cmd(cmd)
 	global daqdir
 	daqdir = os.path.join(datadir, eosdir)
@@ -205,8 +205,8 @@ def mount_eos():
 	#sys.stdout.write('eosdir is %s\n' % eosdir)
 	#sys.stdout.write('daqdir is %s\n' % daqdir)
 
-def umount_eos():
-	cmd = '%s -b fuse umount %s/eos' % (eos, datadir)
+def umount_eos(mount_point=datadir):
+	cmd = '%s -b fuse umount %s/eos' % (eos, mount_point)
 	output = proc_cmd(cmd)
 	global daqdir
 	daqdir = ''
