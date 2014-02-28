@@ -9,8 +9,8 @@ eos="/afs/cern.ch/project/eos/installation/cms/bin/eos.select"
 #Global variables specific to testbeam setup
 dataset='FNAL2013'
 eosdir = 'eos/cms/store/cmst3/group/tracktb/'+dataset
+processed_dir = eosdir+ '/processed'
 
-env_file = '/afs/cern.ch/user/g/grundler/work/public/fnal2013/cmspxltb-analysis/build_env.sh'
 default_mount_point = '/tmp/tracktb'
 daqdir=''
 
@@ -44,7 +44,7 @@ def get_board(dat):
         board = name 
     return board 
 
-def parse_filename(fname):
+def parse_datfilename(fname):
     run = 0
     board = 'unknown'
     #Get run and board from filename
@@ -97,18 +97,18 @@ def get_datfiles(run):
 
     return datfiles
 
-def ln_dat(run, board, dat, force=False):
-	dstdir = get_rundir(run, board) 
-	if os.path.exists(dstdir) and not force: 
-	   sys.stdout.write('Skip linking %s_%s.\n' %( run, board))
-	   return 
+# def ln_dat(run, board, dat, force=False):
+# 	dstdir = get_rundir(run, board) 
+# 	if os.path.exists(dstdir) and not force: 
+# 	   sys.stdout.write('Skip linking %s_%s.\n' %( run, board))
+# 	   return 
 
-	cmd = "mkdir -p %s; cd %s" %(dstdir,dstdir) 
-	proc_cmd(cmd)
+# 	cmd = "mkdir -p %s; cd %s" %(dstdir,dstdir) 
+# 	proc_cmd(cmd)
 
-	srcfile = os.path.join(datadir, eosdir, str(run), dat)
-	cmd = 'ln -s %s .; cd -' %(srcfile)
-	output = proc_cmd(cmd)
+# 	srcfile = os.path.join(datadir, eosdir, str(run), dat)
+# 	cmd = 'ln -s %s .; cd -' %(srcfile)
+# 	output = proc_cmd(cmd)
 
 #
 # Functions that should be fairly generic
@@ -144,14 +144,14 @@ def get_filesize(f):
     return size 
 
 def source_bash(f):
-	pipe = subprocess.Popen(". %s; env" % f, stdout=subprocess.PIPE, shell=True)
-	output = pipe.communicate()[0]
-	#env = dict((line.split("=", 1) for line in output.splitlines()))
-	env = {}
-	for line in output.splitlines():
-		items = line.split("=", 1)
-		if len(items) < 2:
-		   continue
+    pipe = subprocess.Popen(". %s; env" % f, stdout=subprocess.PIPE, shell=True)
+    output = pipe.communicate()[0]
+    #env = dict((line.split("=", 1) for line in output.splitlines()))
+    env = {}
+    for line in output.splitlines():
+        items = line.split("=", 1)
+        if len(items) < 2:
+            continue
 
-		env[items[0]]= items[1]
-	return env
+        env[items[0]]= items[1]
+    return env
