@@ -60,12 +60,15 @@ int main(int argc, char** argv) {
   // Get the root files 
   // ---------------------------------------------------------
   
-  TString convert_file = board_name + "/" + run_number + "-convert.root";
-  TString clusters_file = board_name + "/" + run_number + "-clustering.root";
+  // TString convert_file = board_name + "/" + run_number + "-convert.root";
+  // TString clusters_file = board_name + "/" + run_number + "-clustering.root";
+  TString convert_file = run_number + "-convert.root";
+  TString clusters_file = run_number + "-clustering.root";
 
   // cout << "cluster file: " << clusters_file << endl; 
   // TString tracks_file = data_dir + "/" + run_number + "-tracks.root";
-  TString tracks_noalign_file = board_name + "/" + run_number + "-tracks_noalign.root";
+  // TString tracks_noalign_file = board_name + "/" + run_number + "-tracks_noalign.root";
+  TString tracks_noalign_file = run_number + "-tracks_noalign.root";
   
   TFile *f = new TFile(clusters_file);  
   
@@ -124,7 +127,7 @@ int main(int argc, char** argv) {
 
   RootWSite* mySite = new RootWSite();
   mySite->setTitle("Test Beam DQM");
-  mySite->setComment(board_name+string("/")+run_number);
+  mySite->setComment(run_number+string("/")+board_name);
   mySite->setCommentLink("../");
   mySite->addAuthor("Stefano Mersi");
   mySite->addAuthor("Xin Shi");
@@ -283,7 +286,8 @@ int main(int argc, char** argv) {
   // ---------------------------------------------------------
   // 5. Making Check Data Integrity page  
   // ---------------------------------------------------------
-  string datafile = string(board_name) + string("/") + string(run_number) + string("chk_dat.txt");
+  // string datafile = string(board_name) + string("/") + string(run_number) + string("chk_dat.txt");
+  string datafile = string(run_number) + string("chk_dat.txt");
 
 
   RootWPage* myPage5 = NULL ; 
@@ -318,8 +322,9 @@ int main(int argc, char** argv) {
   // make the full data_check file link 
   
   
-  string datafile_ful = string(board_name) + string("/") + string(run_number) + 
-    string("check_data_integrity.txt");
+  // string datafile_ful = string(board_name) + string("/") + string(run_number) + 
+  //   string("check_data_integrity.txt");
+  string datafile_ful = string(run_number) + string("check_data_integrity.txt");
   
   if ( boost::filesystem::exists( datafile_ful ) ) { 
     RootWContent* myContent5_ful = new RootWContent("Full Data Integrity Check");
