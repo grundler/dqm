@@ -144,14 +144,20 @@ def get_filesize(f):
     return size 
 
 def source_bash(f):
+    #sys.stdout.write('sourcing bash file\n')
     pipe = subprocess.Popen(". %s; env" % f, stdout=subprocess.PIPE, shell=True)
     output = pipe.communicate()[0]
     #env = dict((line.split("=", 1) for line in output.splitlines()))
     env = {}
     for line in output.splitlines():
+        #sys.stdout.write('%s\n' % line)
         items = line.split("=", 1)
         if len(items) < 2:
             continue
+
+        #this is a kluge to fix a problem I'm seeing
+        if items[0] == 'module':
+            items[1] += '\n}'
 
         env[items[0]]= items[1]
     return env
