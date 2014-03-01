@@ -68,7 +68,8 @@ int main(int argc, char** argv) {
   // cout << "cluster file: " << clusters_file << endl; 
   // TString tracks_file = data_dir + "/" + run_number + "-tracks.root";
   // TString tracks_noalign_file = board_name + "/" + run_number + "-tracks_noalign.root";
-  TString tracks_noalign_file = run_number + "-tracks_noalign.root";
+  TString tracks_noalign_file = run_number + "-tracks_prealign.root";
+
   
   TFile *f = new TFile(clusters_file);  
   
