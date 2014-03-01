@@ -66,12 +66,18 @@ def main():
 
 # eos_file should be full path of file in eos starting with 'eos/' not '/eos/'
 def analyze(eos_file, modes, run=0, board='unknown', dbfile=None, nevents=999999999):
+    # cmd = 'env'
+    # output = proc_cmd(cmd)
+    # sys.stdout.write('env %s\n' % output)
+    # sys.stdout.flush()
 
     sys.stdout.write('Start analysis of %s:\n\tmodes - %s\n' % (eos_file, modes))
     sys.stdout.flush()
 
 	#source environment for running
     procenv = source_bash(env_file)
+    # sys.stdout.write('procenv: %s\n' % procenv)
+    # sys.stdout.flush()
 
     #Find run and board information
     if run == 0 or board == 'unknown':
@@ -94,18 +100,24 @@ def analyze(eos_file, modes, run=0, board='unknown', dbfile=None, nevents=999999
 	#Mount EOS and link data from EOS
     rundir = os.path.join(workdir,'data','cmspixel',str(run).zfill(6))
     cmd = 'mkdir -p %s' % rundir
-    proc_cmd(cmd)
+    output = proc_cmd(cmd)
+    # sys.stdout.write('%s\n' % output)
+    # sys.stdout.flush()
 
     mount_eos(mount_point)
     cmd = 'ln -sf %s mtb.bin' % os.path.join(mount_point,eos_file)
-    proc_cmd(cmd,procdir=rundir)
+    output = proc_cmd(cmd,procdir=rundir)
+    # sys.stdout.write('%s\n' % output)
+    # sys.stdout.flush()
+    if not os.path.exists(os.readlink(os.path.join(rundir,'mtb.bin'))):
+        sys.stdout.write('mtb.bin is broken symlink\n')
 
     #Create modified copy of config file, appropriate to the board
     cfg_file = modified_copy(job_config_file, workdir, board, nevents, mount_point=mount_point)
 
 	#actually run
     for mode in modes:
-        sys.stdout.write('\nProcessing: jobsub -c %s %s %s' % (cfg_file, mode, run))
+        sys.stdout.write('\nProcessing: jobsub -c %s %s %s\n' % (cfg_file, mode, run))
         sys.stdout.flush()
 
         cmd = 'jobsub -c %s %s %s' % (cfg_file, mode, run)
@@ -128,6 +140,11 @@ def analyze(eos_file, modes, run=0, board='unknown', dbfile=None, nevents=999999
     sys.stdout.flush()
 
 def analyzeBatch(files, modes=allmodes, suffix='', dbfile=None, queue='1nh', submit=True, nevents=999999999):
+    #cmd = 'env'
+    #output = proc_cmd(cmd)
+    #sys.stdout.write('env %s\n' % output)
+    #sys.stdout.flush()
+
     if not os.path.exists(submit_dir):
         cmd = 'mkdir -p %s' % submit_dir
         proc_cmd(cmd)
