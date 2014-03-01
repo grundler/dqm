@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
 
       TDirectory *dir = f->GetDirectory(dir_name);
       if (dir) {
-	myContent = procCluster(base_name, n, f);
+         myContent = procCluster(base_name, n, f);
 	myPage->addContent(myContent);
       }
     } 
@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
 
       TDirectory *dir = f_convert->GetDirectory(dir_name);
       if (dir) {
-	myContent = procConvert(base_name, n, f_convert);
+         myContent = procConvert(base_name, n, f_convert);
 	myPage_convert->addContent(myContent);
       }
     } 
@@ -232,7 +232,7 @@ int main(int argc, char** argv) {
     base_name = "MyEUTelTestFitter"; 
     
     for (int n=0; n<max_number_of_detectors; n++) {
-      myContent = procOnTrackCluster(base_name, n, f2);
+       myContent = procOnTrackCluster(base_name, n, f2, true);
       if (myContent != 0) {
 	myPage2->addContent(myContent);
       }
@@ -255,7 +255,7 @@ int main(int argc, char** argv) {
   base_name = "MyEUTelTestFitter"; 
 
   for (int n=0; n<max_number_of_detectors; n++) {
-      myContent = procTracking(base_name, n, f2);
+     myContent = procTracking(base_name, n, f2);
       if (myContent != 0) {
 	myPage3->addContent(myContent);
       }
@@ -984,30 +984,30 @@ RootWContent* procTracking(string base_name, int id, TFile *f, bool verbose=fals
   // ---------------------------------------------------------
   // 3.3 Pulls X 
   // ---------------------------------------------------------
-  h_name = get_hname_tracks(base_name, "/pl", id_str, "_pullsX");
+  // h_name = get_hname_tracks(base_name, "/pl", id_str, "_pullsX");
 
-  TH1D *pl0_pullsX = (TH1D*)f->Get(h_name);
+  // TH1D *pl0_pullsX = (TH1D*)f->Get(h_name);
 
-  if (!pl0_pullsX) return 0;  
+  // if (!pl0_pullsX) return 0;  
   
-  myCanvas->cd();
-  pl0_pullsX->Draw();
-  RootWImage*  pl0_pullsX_img = new RootWImage(myCanvas, ww, wh);
-  myContent->addItem(pl0_pullsX_img);
+  // myCanvas->cd();
+  // pl0_pullsX->Draw();
+  // RootWImage*  pl0_pullsX_img = new RootWImage(myCanvas, ww, wh);
+  // myContent->addItem(pl0_pullsX_img);
 
   // ---------------------------------------------------------
   // 3.4 Pulls Y
   // ---------------------------------------------------------
-  h_name = get_hname_tracks(base_name, "/pl", id_str, "_pullsY");
+  // h_name = get_hname_tracks(base_name, "/pl", id_str, "_pullsY");
 
-  TH1D *pl0_pullsY = (TH1D*)f->Get(h_name);
+  // TH1D *pl0_pullsY = (TH1D*)f->Get(h_name);
 
-  if (!pl0_pullsY) return 0;  
+  // if (!pl0_pullsY) return 0;  
   
-  myCanvas->cd();
-  pl0_pullsY->Draw();
-  RootWImage*  pl0_pullsY_img = new RootWImage(myCanvas, ww, wh);
-  myContent->addItem(pl0_pullsY_img);
+  // myCanvas->cd();
+  // pl0_pullsY->Draw();
+  // RootWImage*  pl0_pullsY_img = new RootWImage(myCanvas, ww, wh);
+  // myContent->addItem(pl0_pullsY_img);
 
 
   if (verbose) cout << " OK." << endl; 
