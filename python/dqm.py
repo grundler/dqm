@@ -62,9 +62,9 @@ short_events = 5000
 class JOBS:
     unknown, hits, tracks, nJobs = range(-1,3)
     prefix = ['hits', 'tracks', 'unknown']
-    modes = [ ['convert', 'clustering', 'hitmaker'], ['tracks'], [] ]
+    modes = [ ['convert', 'clustering', 'hitmaker'], ['tracks_prealign'], [] ]
     queues = ['1nh', '1nh', '']
-    nevents = [full_events, short_events, 0]
+    nevents = [short_events, short_events, 0]
 
 debug = False 
 #debug = True 
@@ -196,11 +196,12 @@ def submit_job(job, run, filename, test=False):
 	# open(f,'a').close()
     f = db_file_name(filename, job, STATUS.submitted, insert=True)
 
+    fullpath = eosdir+"/"+str(run)+"/"+filename
 	#Actually do the submission
     #give a file name to be created upon completion
     # f = os.path.join(dbdir, '.'+STATUS.prefix[STATUS.returned]+'.'+JOBS.prefix[job]+'.'+file)
     f = db_file_name(filename, job, STATUS.returned, insert=False)
-    analyze.analyzeBatch([filename], JOBS.modes[job], 
+    analyze.analyzeBatch([fullpath], JOBS.modes[job], 
                             dbfile=f, suffix='-'+JOBS.prefix[job],
                             queue=JOBS.queues[job], nevents=JOBS.nevents[job])
 	#cmd = '%s %s' % (submission_script, run)
