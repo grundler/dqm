@@ -7,9 +7,10 @@ import subprocess
 eos="/afs/cern.ch/project/eos/installation/cms/bin/eos.select"
 
 #Global variables specific to testbeam setup
-dataset='FNAL2013'
+dataset='FNAL2014'
 eosdir = 'eos/cms/store/cmst3/group/tracktb/'+dataset
 processed_dir = eosdir+ '/processed'
+tprefix = '.transferred.'
 
 default_mount_point = '/tmp/tracktb'
 daqdir=''
@@ -90,6 +91,11 @@ def get_datfiles(run):
     keyword = '.dat'
     for line in output.split():
         if keyword in line:
+            #check if transfer marker exists
+            t = os.path.join(daqdir, str(run), tprefix+line)
+            if not os.path.exists(t):
+                continue
+            #check file before adding it
             f = os.path.join(daqdir, str(run), line)
             filesize = get_filesize(f) 
             if filesize > 10: 
