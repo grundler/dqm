@@ -64,7 +64,7 @@ class JOBS:
     prefix = ['hits', 'tracks', 'unknown']
     modes = [ ['convert', 'clustering', 'hitmaker'], ['tracks_prealign'], [] ]
     queues = ['1nh', '1nh', '']
-    nevents = [short_events, short_events, 0]
+    nevents = [full_events, short_events, 0]
 
 debug = False 
 #debug = True 
@@ -211,10 +211,11 @@ def submit_job(job, run, filename, test=False):
     return code
 
 def publish(fname, job, run, board):                                                                                
-    sys.stdout.write('[pub_dqm] run %s ... ' % run)
+    sys.stdout.write('[pub_dqm] run %s ... \n' % run)
     sys.stdout.flush()
 
     procenv = source_bash(env_file)
+    #sys.stdout.write('procenv: %s\n' % procenv)
     histdir = os.path.join(mount_point, processed_dir, board, 'histograms')
 
     #Indicate we're published in the db
@@ -229,7 +230,6 @@ def index(arg):
 	sys.stdout.write('[make index] ... ')
 	sys.stdout.flush()
 	procenv = source_bash(env_file)
-	#sys.stdout.write('procenv: %s\n' % procenv)
 	targetdir = procenv['TARGETDIRECTORY']
     
 	runs = []
