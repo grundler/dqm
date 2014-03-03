@@ -95,53 +95,53 @@ DATE
 
 
 def default(arg=None):
-	#Start by mounting the eos directory, so we can do 'ls', 'ln -s', etc.
-	mount_eos(mount_point)
+    #Start by mounting the eos directory, so we can do 'ls', 'ln -s', etc.
+    mount_eos(mount_point)
 
-	submissions = 0 #counter for how many jobs we've submitted
+    submissions = 0 #counter for how many jobs we've submitted
 
-	sys.stdout.write('Getting runs\n')
-	runs = get_runs()
-	runs = sorted(runs, reverse=True)
-	sys.stdout.write('Got %s runs\n' % len(runs))
+    sys.stdout.write('Getting runs\n')
+    runs = get_runs()
+    runs = sorted(runs, reverse=True)
+    sys.stdout.write('Got %s runs\n' % len(runs))
 
-	#loop over all the runs we found
-	for run in runs:
-		if submissions >= max_submissions:
-		   break
-		datfile = get_datfiles(run)
-		if not datfile:
-		   sys.stdout.write('No dat file for run %s.\n' %run) 
-		   continue
+    #loop over all the runs we found
+    for run in runs:
+        if submissions >= max_submissions:
+            break
+        datfile = get_datfiles(run)
+        if not datfile:
+            sys.stdout.write('No dat file for run %s.\n' %run) 
+            continue
 
-		#Each run may have several dat files, loop over them.
-		for dat in datfile:
-			board = get_board(dat) 
+        #Each run may have several dat files, loop over them.
+        for dat in datfile:
+            board = get_board(dat) 
 
-			#check status of processing
-			for job in range(JOBS.nJobs):
-				status = get_job_status(job, dat)
-				sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
-				if status == STATUS.published:
-				   sys.stdout.write('Nothing more to do for this job, moving on\n')
-				   continue #continue to next job
-				elif status == STATUS.returned:
-					 sys.stdout.write('Job returned. Publishing\n')
-					 publish(dat, job, run, board)
-				elif status == STATUS.submitted:
-					sys.stdout.write('Waiting for job to finish processing\n')
-					break #can't go on with this run until this job is done
-				else:
-					#Need to submit the job
-					submit_job(job, run, dat)
+            #check status of processing
+            for job in range(JOBS.nJobs):
+                status = get_job_status(job, dat)
+                sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
+                if status == STATUS.published:
+                    sys.stdout.write('Nothing more to do for this job, moving on\n')
+                    continue #continue to next job
+                elif status == STATUS.returned:
+                    sys.stdout.write('Job returned. Publishing\n')
+                    publish(dat, job, run, board)
+                elif status == STATUS.submitted:
+                    sys.stdout.write('Waiting for job to finish processing\n')
+                    break #can't go on with this run until this job is done
+                else:
+                    #Need to submit the job
+                    submit_job(job, run, dat)
                     submissions += 1
-					break #if just submitted, can't go to the next job yet
+                    break #if just submitted, can't go to the next job yet
 
-	#finish up
-	umount_eos(mount_point)
+    #finish up
+    umount_eos(mount_point)
 
-	index(arg)
-	sys.stdout.write('Submitted %s jobs\n' % submissions)
+    index(arg)
+    sys.stdout.write('Submitted %s jobs\n' % submissions)
 
 ####
 
