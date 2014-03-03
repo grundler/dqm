@@ -173,8 +173,9 @@ def analyzeBatch(files, modes=allmodes, suffix='', dbfile=None, queue='1nh', sub
 
         #Submit job
         if submit:
+            job_name = 'R'+run+'_B'+board[-1]+suffix
             sys.stdout.write('Submitting %s to %s queue\n' % (script_name, queue))
-            cmd = 'bsub -q %s %s' % (queue, script_name)
+            cmd = 'bsub -q %s -J %s -o %s.out %s' % (queue, job_name, job_name, script_name)
             proc_cmd(cmd, procdir=submit_dir)
 
 def modified_copy(config_file_path, dest_dir, board, nevents, mount_point=eos_mount_point):
