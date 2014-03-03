@@ -51,9 +51,9 @@ max_submissions = 5
 
 #Small class for organizing status information, status should proceed through each value as it goes along
 class STATUS:
-	  unknown, submitted, returned, published, nStatus = range(-1,4)
-	  prefix = ['submitted', 'returned', 'published', 'unknown']
-	  colors = ['aqua', 'teal' , 'green', 'white']
+	  failed, unknown, submitted, returned, published, nStatus = range(-2,4)
+	  prefix = ['submitted', 'returned', 'published', 'failed', 'unknown']
+	  colors = ['aqua', 'teal' , 'green', 'red', 'white']
 
 full_events = 999999999
 short_events = 5000
@@ -183,13 +183,11 @@ def get_job_status(job, filename):
 	return status
 	
 def submit_job(job, run, filename, test=False):
-    code = 0 #need to define failure states
     if test:
         sys.stdout.write('Here we would submit %s job for run %s on %s file\n' % (JOBS.prefix[job], run, filename))
         #f = os.path.join(dbdir, '.'+STATUS.prefix[STATUS.submitted]+'.'+JOBS.prefix[job]+'.'+file)
         #open(f,'a').close()
         f = db_file_name(filename, job, STATUS.submitted, insert=True)
-        return code
 
 	#First, make sure no other process tries to submit
 	# f = os.path.join(dbdir, '.'+STATUS.prefix[STATUS.submitted]+'.'+JOBS.prefix[job]+'.'+file)
@@ -208,8 +206,6 @@ def submit_job(job, run, filename, test=False):
 	#output = proc_cmd(cmd)
 	#sys.stdout.write(output+'\n')
 
-    return code
-
 def publish(fname, job, run, board):                                                                                
     sys.stdout.write('[pub_dqm] run %s ... \n' % run)
     sys.stdout.flush()
@@ -227,61 +223,67 @@ def publish(fname, job, run, board):
     sys.stdout.write(' OK.\n')
     
 def index(arg): 
-	sys.stdout.write('[make index] ... ')
-	sys.stdout.flush()
-	procenv = source_bash(env_file)
-	targetdir = procenv['TARGETDIRECTORY']
-    
-	runs = []
-	#data = []
-	run_status = {}
-	cmd = 'ls -A %s' % dbdir
-	output = proc_cmd(cmd)
-	for line in output.split():
-		# #submission is the first bit of info we have
-		# if line.split('.')[1] is STATUS.prefix[STATUS.submitted]:
-		run, board, job, status = parse_db(line)
-		#sys.stdout.write('%s %s %s %s\n' % (run, board, job, status))
-	    #data.append((run,board,job,status))
-		if run not in runs:
-		   runs.append(run)
-		   #run_status[run] = {}
-		   #run_status[run]['PixelTestBoard1'] = {}
-		   #run_status[run]['PixelTestBoard2'] = {}
-		label = str(run).zfill(6)+'_'+board
-		if (label) not in run_status:
-		   run_status[label] = {}
-		#if job not in run_status[run][board] or run_status[run][board][job] < status:
-		#   run_status[run][board][job] = status
-		if job not in run_status[label] or run_status[label][job] < status:
-		   run_status[label][job] = status
-		#sys.stdout.write('job %s run_status %s %s %s\n' % (JOBS.prefix[job], run_status, run_status[label], run_status[label][job]))
+    sys.stdout.write('[make index] ... \n')
+    sys.stdout.flush()
+    procenv = source_bash(env_file)
+    targetdir = procenv['TARGETDIRECTORY']
 
-	runs = sorted(runs, reverse=True)
+    sys.stdout.write('\tget db files\n')
+    sys.stdout.flush()
+    runs = []
+    #data = []
+    run_status = {}
+    # cmd = 'ls %s' % dbdir
+    # output = proc_cmd(cmd)
+    # sys.stdout.write('\tgot db files\n')
+    # sys.stdout.flush()
+    # for line in output.split():
+    dblist = os.listdir("%s" % dbdir)
+    for line in dblist:
+        # #submission is the first bit of info we have
+        # if line.split('.')[1] is STATUS.prefix[STATUS.submitted]:
+        run, board, job, status = parse_db(line)
+        #sys.stdout.write('%s %s %s %s\n' % (run, board, job, status))
+        #data.append((run,board,job,status))
+        if run not in runs:
+            runs.append(run)
+            #run_status[run] = {}
+            #run_status[run]['PixelTestBoard1'] = {}
+            #run_status[run]['PixelTestBoard2'] = {}
+        label = str(run).zfill(6)+'_'+board
+        if (label) not in run_status:
+            run_status[label] = {}
+        #if job not in run_status[run][board] or run_status[run][board][job] < status:
+        #   run_status[run][board][job] = status
+        if job not in run_status[label] or run_status[label][job] < status:
+            run_status[label][job] = status
+        #sys.stdout.write('job %s run_status %s %s %s\n' % (JOBS.prefix[job], run_status, run_status[label], run_status[label][job]))
 
-	header_row = ['Run']
-	header_row.extend(JOBS.prefix[:-1])
-	#header_row.extend(['PixelTestBoard1']*len(JOB))
-	#header_row.extend(['PixelTestBoard2']*len(JOB))
-	t = HTML.Table(header_row=header_row)
-	#secondrow = ['']
-	#for board in ['PixelTestBoard1', 'PixelTestBoard2']:
-	#	for job in JOB:
-	#		secondrow.append(job)
-	#t.rows.append(secondrow)
-	for run_board in sorted(run_status, reverse=True):
-		run_link = HTML.link(run_board, '%s' %run_board)
-		row = [run_link]
+    runs = sorted(runs, reverse=True)
 
-		for job in run_status[run_board]:
-			color = STATUS.colors[run_status[run_board][job]]
-			colored_result = HTML.TableCell(STATUS.prefix[run_status[run_board][job]], bgcolor=color)
-			row.append(colored_result)
-		t.rows.append(row)
-    
-	htmlcode = str(t)
+    header_row = ['Run']
+    header_row.extend(JOBS.prefix[:-1])
+    #header_row.extend(['PixelTestBoard1']*len(JOB))
+    #header_row.extend(['PixelTestBoard2']*len(JOB))
+    t = HTML.Table(header_row=header_row)
+    #secondrow = ['']
+    #for board in ['PixelTestBoard1', 'PixelTestBoard2']:
+    #	for job in JOB:
+    #		secondrow.append(job)
+    #t.rows.append(secondrow)
+    for run_board in sorted(run_status, reverse=True):
+        run_link = HTML.link(run_board, '%s' %run_board)
+        row = [run_link]
 
-	html_header = '''<html xmlns="http://www.w3.org/1999/xhtml">
+        for job in run_status[run_board]:
+            color = STATUS.colors[run_status[run_board][job]]
+            colored_result = HTML.TableCell(STATUS.prefix[run_status[run_board][job]], bgcolor=color)
+            row.append(colored_result)
+        t.rows.append(row)
+
+    htmlcode = str(t)
+
+    html_header = '''<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <title>Test Beam DQM - clusters</title>
@@ -299,23 +301,23 @@ def index(arg):
     <div id="content">
     ''' % dataset 
 
-	html_footer = '''<div id="footer">
+    html_footer = '''<div id="footer">
     <p>Page created on %s </p>
     <p>&copy; <a href="mailto:Xin.Shi@cern.ch"> Xin Shi</a> 2013 </p>
     </div>
     </div>
     </body>
     </html>''' %  time.strftime("%Y-%m-%d %H:%M:%S GMT", time.gmtime())
-    
 
-	index = os.path.join(targetdir, 'index.html')
-	#index = os.path.join(targetdir, 'index2.html')
-	fo = open(index, 'w')
-	fo.write(html_header)
-	fo.write(htmlcode)
-	fo.write(html_footer)
-	fo.close()
-	sys.stdout.write(' OK.\n')
+
+    index = os.path.join(targetdir, 'index.html')
+    #index = os.path.join(targetdir, 'index2.html')
+    fo = open(index, 'w')
+    fo.write(html_header)
+    fo.write(htmlcode)
+    fo.write(html_footer)
+    fo.close()
+    sys.stdout.write(' OK.\n')
 
 def db_file_name(basename, job, status, insert=False):
     #f = os.path.join(dbdir, '.'+STATUS.prefix[status]+'.'+JOBS.prefix[job]+'.'+basename)
