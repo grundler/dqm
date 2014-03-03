@@ -66,18 +66,11 @@ def main():
 
 # eos_file should be full path of file in eos starting with 'eos/' not '/eos/'
 def analyze(eos_file, modes, run=0, board='unknown', dbfile=None, nevents=999999999):
-    # cmd = 'env'
-    # output = proc_cmd(cmd)
-    # sys.stdout.write('env %s\n' % output)
-    # sys.stdout.flush()
-
     sys.stdout.write('Start analysis of %s:\n\tmodes - %s\n' % (eos_file, modes))
     sys.stdout.flush()
 
 	#source environment for running
     procenv = source_bash(env_file)
-    # sys.stdout.write('procenv: %s\n' % procenv)
-    # sys.stdout.flush()
 
     #Find run and board information
     if run == 0 or board == 'unknown':
@@ -101,14 +94,10 @@ def analyze(eos_file, modes, run=0, board='unknown', dbfile=None, nevents=999999
     rundir = os.path.join(workdir,'data','cmspixel',str(run).zfill(6))
     cmd = 'mkdir -p %s' % rundir
     output = proc_cmd(cmd)
-    # sys.stdout.write('%s\n' % output)
-    # sys.stdout.flush()
 
     mount_eos(mount_point)
     cmd = 'ln -sf %s mtb.bin' % os.path.join(mount_point,eos_file)
     output = proc_cmd(cmd,procdir=rundir)
-    # sys.stdout.write('%s\n' % output)
-    # sys.stdout.flush()
     if not os.path.exists(os.readlink(os.path.join(rundir,'mtb.bin'))):
         sys.stdout.write('mtb.bin is broken symlink\n')
 
@@ -140,11 +129,6 @@ def analyze(eos_file, modes, run=0, board='unknown', dbfile=None, nevents=999999
     sys.stdout.flush()
 
 def analyzeBatch(files, modes=allmodes, suffix='', dbfile=None, queue='1nh', submit=True, nevents=999999999):
-    #cmd = 'env'
-    #output = proc_cmd(cmd)
-    #sys.stdout.write('env %s\n' % output)
-    #sys.stdout.flush()
-
     if not os.path.exists(submit_dir):
         cmd = 'mkdir -p %s' % submit_dir
         proc_cmd(cmd)
