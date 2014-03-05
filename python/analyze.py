@@ -114,7 +114,7 @@ def analyze(eos_file, modes, run=0, board='unknown', dbfile=None, nevents=999999
 
         sys.stdout.write('OK\n')
 
-    #If requested, reate a file indicating this is completed
+    #If requested, create a file indicating this is completed
     if dbfile is not None:
         open(dbfile,'a').close()
 
@@ -157,7 +157,7 @@ def analyzeBatch(files, modes=allmodes, suffix='', dbfile=None, queue='1nh', sub
 
         #Submit job
         if submit:
-            job_name = 'R'+run+'_B'+board[-1]+suffix
+            job_name = 'r'+run+'_b'+board[-1]+suffix[:2]
             sys.stdout.write('Submitting %s to %s queue\n' % (script_name, queue))
             cmd = 'bsub -q %s -J %s -o %s.out %s' % (queue, job_name, job_name, script_name)
             proc_cmd(cmd, procdir=submit_dir)
