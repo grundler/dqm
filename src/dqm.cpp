@@ -213,6 +213,37 @@ int main(int argc, char** argv) {
 	
   }
 
+  // ---------------------------------------------------------
+  // 1B. Making decoding page
+  // ---------------------------------------------------------
+  string decoding_file = "../lcio/" + run_number + "-decoding.txt";
+  RootWPage* myPage_decoding = NULL; 
+  
+  string page_name_decoding = "decoding"; 
+  myPage_decoding = new RootWPage(page_name_decoding); 
+  myPage_decoding->setAddress("decoding.html");
+
+  cout << "Processing: " << page_name_decoding << " ... \n" << flush;        
+
+  RootWContent *myContent_decoding = new RootWContent("Decoding Statistics");
+
+  ifstream infile_decoding;
+  infile_decoding.open(decoding_file.c_str()); 
+      
+  std::string sd;
+  int nline = 0; 
+  while (std::getline(infile_decoding, sd)) {
+     nline ++; 
+     myContent_decoding->addParagraph(sd);
+	 
+     if (nline > 100) {
+	    myContent_decoding->addParagraph("\n\nExceeding 100 lines limit!!!");
+	    break;
+     }
+  }
+   
+  myPage_decoding->addContent(myContent_decoding );
+
 
   // ---------------------------------------------------------
   // 2. Making on-tracks clusters page  
@@ -361,6 +392,8 @@ int main(int argc, char** argv) {
  
   if ( myPage_convert != NULL)
     mySite->addPage(myPage_convert);
+  if ( myPage_decoding != NULL)
+    mySite->addPage(myPage_decoding);
   if ( myPage2 != NULL)   
     mySite->addPage(myPage2);
   if ( myPage3 != NULL)
