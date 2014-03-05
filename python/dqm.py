@@ -26,6 +26,7 @@ from Decoder_dqm import Decoder
 
 dbdir = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/data/'+dataset+'/.db/'
 env_file = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/dqm/fnal201403/setup.sh'
+mount_point = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/data'
 
 max_submissions = 5
 
@@ -107,8 +108,8 @@ def default(arg=None):
 
     #loop over all the runs we found
     for run in runs:
-        if submissions >= max_submissions:
-            break
+        # if submissions >= max_submissions:
+        #     break
         datfile = get_datfiles(run)
         if not datfile:
             sys.stdout.write('No dat file for run %s.\n' %run) 
@@ -131,7 +132,7 @@ def default(arg=None):
                 elif status == STATUS.submitted:
                     sys.stdout.write('Waiting for job to finish processing\n')
                     break #can't go on with this run until this job is done
-                else:
+                elif submissions < max_submissions:
                     #Need to submit the job
                     submit_job(job, run, dat)
                     submissions += 1
