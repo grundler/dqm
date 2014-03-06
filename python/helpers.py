@@ -2,6 +2,7 @@
 import sys
 import os
 import subprocess
+from datetime import datetime
 
 #eos command
 eos="/afs/cern.ch/project/eos/installation/cms/bin/eos.select"
@@ -83,8 +84,13 @@ def umount_eos(mount_point=default_mount_point):
     cmd = 'rmdir %s/eos' % mount_point
     proc_cmd(cmd)
 
-def get_datfiles(run): 
+def get_datfiles(run):
+    # sys.stdout.write('getting dat files\n')
+    # sys.stdout.flush()
+
     datfiles = []
+    datsize = {}
+    maxsize = {'PixelTestBoard1':0, 'PixelTestBoard2':0}
     cmd = 'ls -1 %s/%s' % (daqdir, run)
     output = proc_cmd(cmd)
     
@@ -99,7 +105,25 @@ def get_datfiles(run):
             f = os.path.join(daqdir, str(run), line)
             filesize = get_filesize(f) 
             if filesize > 10: 
-                datfiles.append(line)
+                # sys.stdout.write('%s : %d\n' % (line, filesize))
+                # sys.stdout.flush()
+
+                datsize[line] = filesize
+                for s in maxsize:
+                    if line.startswith(s):
+                        if filesize > maxsize[s]:
+                            maxsize[s] = filesize
+                #datfiles.append(line)
+
+    for key in datsize:
+        for s in maxsize:
+            if key.startswith(s):
+                if datsize[key] == maxsize[s]:
+                    datfiles.append(key)
+
+    # sys.stdout.write('datfiles: %s \n' % datfiles)
+    # sys.stdout.flush()
+
 
     return datfiles
 
