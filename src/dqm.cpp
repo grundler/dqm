@@ -30,10 +30,12 @@ int main(int argc, char** argv) {
   void setTDRStyle(); 
   RootWContent* procCluster(string base_name, int id, TFile *f, bool verbose=false); 
   RootWContent* procConvert(string base_name, int id, TFile *f, bool verbose=false); 
-  RootWContent* getTriggerPhase(string h_name_str, TFile *f, bool verbose=false);
+  //RootWContent* getTriggerPhase(string h_name_str, TFile *f, bool verbose=false);
+  RootWContent* getPhase(string h_name_str, TFile *f, bool verbose=false);
 
   RootWContent* procOnTrackCluster(string base_name, int id, TFile *f, bool verbose=false); 
-  RootWContent* procTracking(string base_name, int id, TFile *f, bool verbose=false); 
+  RootWContent* procTracking(string base_name, int id, TFile *f, bool verbose=false);
+  RootWContent* procTrackEvt(string base_name, TFile *f, bool verbose=false); 
   RootWContent* procEfficiency(string base_name, TFile *f, bool verbose=false); 
   string get_id_str(int id); 
   char* get_dir_name(string base_name, string id_str="", string suffix=""); 
@@ -190,8 +192,11 @@ int main(int argc, char** argv) {
 
   // Get the triggerPhase plot
 
-  base_name = "MyEUTelConvertCMSPixel/triggerPhase"; 
-  myContent = getTriggerPhase(base_name, f_convert);
+  // base_name = "MyEUTelConvertCMSPixel/triggerPhase"; 
+  // myContent = getTriggerPhase(base_name, f_convert);
+  // myPage_convert->addContent(myContent); 
+  base_name = "MyEUTelConvertCMSPixel/"; 
+  myContent = getPhase(base_name, f_convert);
   myPage_convert->addContent(myContent); 
 
   //TFile *f = new TFile(clusters_file);
@@ -248,27 +253,27 @@ int main(int argc, char** argv) {
   // ---------------------------------------------------------
   // 2. Making on-tracks clusters page  
   // ---------------------------------------------------------
-  RootWPage* myPage2 = NULL; 
+  // RootWPage* myPage2 = NULL; 
 
-  if (f2_exists) {
-    string page_name2 = "on track cluster"; 
-    // RootWPage* myPage2 = new RootWPage(page_name2); 
-    myPage2 = new RootWPage(page_name2); 
+  // if (f2_exists) {
+  //   string page_name2 = "on track cluster"; 
+  //   // RootWPage* myPage2 = new RootWPage(page_name2); 
+  //   myPage2 = new RootWPage(page_name2); 
 
-    myPage2->setAddress("two.html");
+  //   myPage2->setAddress("two.html");
     
-    cout << "Processing: " << page_name2 << " ... \n" << flush;        
+  //   cout << "Processing: " << page_name2 << " ... \n" << flush;        
     
-    //TFile *f2 = new TFile(tracks_file);
-    base_name = "MyEUTelTestFitter"; 
+  //   //TFile *f2 = new TFile(tracks_file);
+  //   base_name = "MyEUTelTestFitter"; 
     
-    for (int n=0; n<max_number_of_detectors; n++) {
-       myContent = procOnTrackCluster(base_name, n, f2, true);
-      if (myContent != 0) {
-	myPage2->addContent(myContent);
-      }
-    }
-  }
+  //   for (int n=0; n<max_number_of_detectors; n++) {
+  //      myContent = procOnTrackCluster(base_name, n, f2, true);
+  //     if (myContent != 0) {
+  //   myPage2->addContent(myContent);
+  //     }
+  //   }
+  // }
 
   // ---------------------------------------------------------
   // 3. Making tracking page  
@@ -276,44 +281,51 @@ int main(int argc, char** argv) {
   RootWPage* myPage3= NULL ; 
 
   if (f2_exists) {
-  string page_name3 = "tracking"; 
-  myPage3 = new RootWPage(page_name3); 
-  myPage3->setAddress("three.html");
+     string page_name3 = "tracking"; 
+     myPage3 = new RootWPage(page_name3); 
+     myPage3->setAddress("three.html");
+     
+     cout << "Processing: " << page_name3 << " ... \n" << flush;        
 
-  cout << "Processing: " << page_name3 << " ... \n" << flush;        
+     base_name = "MyEUTelFitTuple";
+     myContent = procTrackEvt(base_name, f2);
+     if (myContent != NULL) {
+        myPage3->addContent(myContent);
+     }
   
-  // TFile *f3 = new TFile(tracks_file);
-  base_name = "MyEUTelTestFitter"; 
+     // TFile *f3 = new TFile(tracks_file);
+     base_name = "MyEUTelTestFitter"; 
 
-  for (int n=0; n<max_number_of_detectors; n++) {
-     myContent = procTracking(base_name, n, f2);
-      if (myContent != 0) {
-	myPage3->addContent(myContent);
-      }
-  }
+     for (int n=0; n<max_number_of_detectors; n++) {
+        myContent = procTracking(base_name, n, f2);
+        if (myContent != 0) {
+           myPage3->addContent(myContent);
+        }
+     }
+
   }
 
   // ---------------------------------------------------------
   // 4. Making Detectioin Efficiency page  
   // ---------------------------------------------------------
-  RootWPage* myPage4 = NULL; 
-  base_name = "MyEUTelFitTuple"; 
+  // RootWPage* myPage4 = NULL; 
+  // base_name = "MyEUTelFitTuple"; 
 
-  if (f2_exists) {
-    myContent = procEfficiency(base_name, f2);
-    if (myContent != NULL) {
+  // if (f2_exists) {
+  //   myContent = procEfficiency(base_name, f2);
+  //   if (myContent != NULL) {
       
-      string page_name4 = "efficiency"; 
-      myPage4 = new RootWPage(page_name4); 
-      myPage4->setAddress("four.html");
+  //     string page_name4 = "efficiency"; 
+  //     myPage4 = new RootWPage(page_name4); 
+  //     myPage4->setAddress("four.html");
       
-      cout << "Processing: " << page_name4 << " ... \n" << flush;        
+  //     cout << "Processing: " << page_name4 << " ... \n" << flush;        
       
-      // TFile *f4 = new TFile(tracks_file);
+  //     // TFile *f4 = new TFile(tracks_file);
       
-      myPage4->addContent(myContent);
-    }
-  }
+  //     myPage4->addContent(myContent);
+  //   }
+  // }
 
   // ---------------------------------------------------------
   // 5. Making Check Data Integrity page  
@@ -394,12 +406,12 @@ int main(int argc, char** argv) {
     mySite->addPage(myPage_convert);
   if ( myPage_decoding != NULL)
     mySite->addPage(myPage_decoding);
-  if ( myPage2 != NULL)   
-    mySite->addPage(myPage2);
+  // if ( myPage2 != NULL)   
+  //   mySite->addPage(myPage2);
   if ( myPage3 != NULL)
     mySite->addPage(myPage3);
-  if (myPage4 != NULL) 
-    mySite->addPage(myPage4);
+  // if (myPage4 != NULL) 
+  //   mySite->addPage(myPage4);
   if (myPage5 != NULL)
     mySite->addPage(myPage5);
 
@@ -680,9 +692,50 @@ RootWContent* procConvert(string base_name, int id, TFile *f, bool verbose=false
 }
 
 
-RootWContent* getTriggerPhase(string h_name_str, TFile *f, bool verbose=false) {
+// RootWContent* getTriggerPhase(string h_name_str, TFile *f, bool verbose=false) {
+//   stringstream convert; 
+//   string content_name = "TriggerPhase "; 
+    
+//   int ww = 850; 
+//   int wh = 600; 
+  
+//   if (verbose) cout << content_name << " ..." << flush;
+//   RootWContent* myContent = new RootWContent(content_name); 
+  
+//   TCanvas* myCanvas = new TCanvas(); 
+  
+//   // char* h_name;
+//   char *h_name = new char[h_name_str.size()+1]; 
+//   h_name[h_name_str.size()]=0;
+//   memcpy(h_name,h_name_str.c_str(),h_name_str.size());
+  
+//   // ---------------------------------------------------------
+//   // Trigger Phase plot 
+//   // ---------------------------------------------------------
+//   // h_name = get_hname(base_name, "/dcolMonitorEvt_d", id_str);
+
+//   TH1D *colTime; 
+      
+//   colTime = (TH1D*)f->Get(h_name);
+
+//   if (colTime) {
+//     // colTime->GetYaxis()->SetTitle("Col");
+//     // colTime->GetXaxis()->SetTitle("Events");
+//     // colTime->GetZaxis()->SetLabelSize(0.02);
+      
+//     myCanvas->cd();
+//     colTime->Draw(); // "colz");
+//     RootWImage* colTime_img = new RootWImage(myCanvas, ww, wh); 
+//     myContent->addItem(colTime_img);
+
+//     if (verbose) cout << " OK." << endl; 
+//   }
+//   return myContent; 
+// }
+
+RootWContent* getPhase(string h_name_str, TFile *f, bool verbose=false) {
   stringstream convert; 
-  string content_name = "TriggerPhase "; 
+  string content_name = "Trigger/Data Phase "; 
     
   int ww = 850; 
   int wh = 600; 
@@ -691,26 +744,25 @@ RootWContent* getTriggerPhase(string h_name_str, TFile *f, bool verbose=false) {
   RootWContent* myContent = new RootWContent(content_name); 
   
   TCanvas* myCanvas = new TCanvas(); 
+
+  string trigphase = h_name_str + "triggerPhase";
+  string dataphase = h_name_str + "dataPhase";
+  string trighit = trigphase + "Hit";
+  string datahit = dataphase + "Hit";
   
-  // char* h_name;
-  char *h_name = new char[h_name_str.size()+1]; 
-  h_name[h_name_str.size()]=0;
-  memcpy(h_name,h_name_str.c_str(),h_name_str.size());
+  char *h_name = new char[trigphase.size()+1]; 
+  h_name[trigphase.size()]=0;
+  memcpy(h_name,trigphase.c_str(),trigphase.size());
   
   // ---------------------------------------------------------
   // Trigger Phase plot 
   // ---------------------------------------------------------
-  // h_name = get_hname(base_name, "/dcolMonitorEvt_d", id_str);
 
   TH1D *colTime; 
       
   colTime = (TH1D*)f->Get(h_name);
 
   if (colTime) {
-    // colTime->GetYaxis()->SetTitle("Col");
-    // colTime->GetXaxis()->SetTitle("Events");
-    // colTime->GetZaxis()->SetLabelSize(0.02);
-      
     myCanvas->cd();
     colTime->Draw(); // "colz");
     RootWImage* colTime_img = new RootWImage(myCanvas, ww, wh); 
@@ -718,6 +770,55 @@ RootWContent* getTriggerPhase(string h_name_str, TFile *f, bool verbose=false) {
 
     if (verbose) cout << " OK." << endl; 
   }
+
+  h_name = new char[trighit.size()+1]; 
+  h_name[trighit.size()]=0;
+  memcpy(h_name,trighit.c_str(),trighit.size());
+
+  colTime = (TH1D*)f->Get(h_name);
+
+  if (colTime) {
+    myCanvas->cd();
+    colTime->Draw(); // "colz");
+    RootWImage* colTime_img2 = new RootWImage(myCanvas, ww, wh); 
+    myContent->addItem(colTime_img2);
+
+    if (verbose) cout << " OK." << endl; 
+  }
+
+
+  h_name = new char[dataphase.size()+1]; 
+  h_name[dataphase.size()]=0;
+  memcpy(h_name,dataphase.c_str(),dataphase.size());
+
+  colTime = (TH1D*)f->Get(h_name);
+
+  if (colTime) {
+    myCanvas->cd();
+    //myCanvas->SetLogy();
+    colTime->Draw(); // "colz");
+    RootWImage* colTime_img3 = new RootWImage(myCanvas, ww, wh); 
+    myContent->addItem(colTime_img3);
+
+    if (verbose) cout << " OK." << endl; 
+  }
+
+  h_name = new char[datahit.size()+1]; 
+  h_name[datahit.size()]=0;
+  memcpy(h_name,datahit.c_str(),datahit.size());
+
+  colTime = (TH1D*)f->Get(h_name);
+
+  if (colTime) {
+    myCanvas->cd();
+    //myCanvas->SetLogy();
+    colTime->Draw(); // "colz");
+    RootWImage* colTime_img4 = new RootWImage(myCanvas, ww, wh); 
+    myContent->addItem(colTime_img4);
+
+    if (verbose) cout << " OK." << endl; 
+  }
+
   return myContent; 
 }
 
@@ -1074,6 +1175,34 @@ RootWContent* procEfficiency(string base_name, TFile *f, bool verbose=false) {
     EUFitEff->Draw("DetectionEff_DUTId4");
     RootWImage*  DetectionEff_DUTId4_img = new RootWImage(myCanvas, ww, wh);
     myContent->addItem(DetectionEff_DUTId4_img);
+    return myContent; 
+  }
+  
+  return NULL; 
+
+}
+
+RootWContent* procTrackEvt(string base_name, TFile *f, bool verbose=false) {
+  char* get_tname_tracks(string a, string b);
+  string content_name = "TracksVsEvent"; 
+  RootWContent* myContent = new RootWContent(content_name); 
+  
+  TCanvas* myCanvas = new TCanvas(); 
+
+  int ww = 850; 
+  int wh = 600; 
+  
+  char* t_name; 
+  t_name = get_tname_tracks(base_name, "/EUFit");
+
+  TTree *EUFit = (TTree*)f->Get(t_name);
+
+  if ( EUFit && EUFit->GetBranch("EvtNr") ) {
+    
+    myCanvas->cd();
+    EUFit->Draw("EvtNr");
+    RootWImage*  EvtNr_img = new RootWImage(myCanvas, ww, wh);
+    myContent->addItem(EvtNr_img);
     return myContent; 
   }
   
