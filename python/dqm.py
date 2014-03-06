@@ -24,8 +24,11 @@ else:
 
 from Decoder_dqm import Decoder 
 
+debug = False
+
 dbdir = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/data/'+dataset+'/.db/'
 env_file = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/dqm/fnal201403/setup.sh'
+eos_mount_point = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/data'
 mount_point = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/data'
 
 max_submissions = 5
@@ -45,7 +48,7 @@ class JOBS:
     prefix = ['hits', 'tracks', 'unknown']
     modes = [ ['convert', 'clustering', 'hitmaker'], ['tracks_prealign'], [] ]
     queues = ['1nh', '1nh', '']
-    nevents = [full_events, short_events, 0]
+    nevents = [full_events, full_events, 0]
 
 def main():
     args = sys.argv[1:]
@@ -97,11 +100,15 @@ DATE
 
 def default(arg=None):
     #Start by mounting the eos directory, so we can do 'ls', 'ln -s', etc.
+    mytime = str(datetime.today()).split(' ')[1].replace(':','').replace('.','')
+    #global mount_point
+    #mount_point = eos_mount_point+mytime
     mount_eos(mount_point)
 
     submissions = 0 #counter for how many jobs we've submitted
 
-    sys.stdout.write('Getting runs\n')
+    if debug:
+        sys.stdout.write('Getting runs\n')
     runs = get_runs()
     runs = sorted(runs, reverse=True)
     sys.stdout.write('Got %s runs\n' % len(runs))
@@ -112,7 +119,8 @@ def default(arg=None):
         #     break
         datfile = get_datfiles(run)
         if not datfile:
-            sys.stdout.write('No dat file for run %s.\n' %run) 
+            if debug: 
+                sys.stdout.write('No dat file for run %s.\n' %run) 
             continue
 
         #Each run may have several dat files, loop over them.
@@ -122,15 +130,19 @@ def default(arg=None):
             #check status of processing
             for job in range(JOBS.nJobs):
                 status = get_job_status(job, dat)
-                sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
+                if debug:
+                    sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
                 if status == STATUS.published:
-                    sys.stdout.write('Nothing more to do for this job, moving on\n')
+                    if debug: 
+                        sys.stdout.write('Nothing more to do for this job, moving on\n')
                     continue #continue to next job
                 elif status == STATUS.returned:
-                    sys.stdout.write('Job returned. Publishing\n')
+                    if debug: 
+                        sys.stdout.write('Job returned. Publishing\n')
                     publish(dat, job, run, board)
                 elif status == STATUS.submitted:
-                    sys.stdout.write('Waiting for job to finish processing\n')
+                    if debug: 
+                        sys.stdout.write('Waiting for job to finish processing\n')
                     break #can't go on with this run until this job is done
                 elif submissions < max_submissions:
                     #Need to submit the job
@@ -171,7 +183,7 @@ def submit_job(job, run, filename, test=False):
                             queue=JOBS.queues[job], nevents=JOBS.nevents[job])
 
 def publish(fname, job, run, board):                                                                                
-    sys.stdout.write('[pub_dqm] run %s ... \n' % run)
+    sys.stdout.write('[pub_dqm] run %s ... ' % run)
     sys.stdout.flush()
 
     procenv = source_bash(env_file)
@@ -182,16 +194,18 @@ def publish(fname, job, run, board):
 
     cmd = 'dqm %s %s' %(board, str(run).zfill(6))
     output = proc_cmd(cmd, procdir=histdir, env=procenv)
-    print output
+    if debug: 
+        print output
     sys.stdout.write(' OK.\n')
     
 def index(arg): 
-    sys.stdout.write('[make index] ... \n')
+    sys.stdout.write('[make index] ... ')
     sys.stdout.flush()
     procenv = source_bash(env_file)
     targetdir = procenv['TARGETDIRECTORY']
 
-    sys.stdout.write('\tget db files\n')
+    if debug: 
+        sys.stdout.write('\tget db files\n')
     sys.stdout.flush()
     runs = []
     run_status = {}
