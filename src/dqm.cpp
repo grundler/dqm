@@ -18,6 +18,7 @@
 #include <TFile.h>
 #include <TH1D.h>
 #include <TH2D.h>
+#include <TProfile.h>
 #include <TStyle.h>
 
 #define TARGETDIRECTORY "TARGETDIRECTORY"
@@ -587,15 +588,37 @@ RootWContent* procCluster(string base_name, int id, TFile *f, bool verbose=false
   h_name = get_hname(base_name, "/clusterSizeVsCharge_d", id_str);
   TH2D *clusterSizeVsCharge_d0 = (TH2D*)f->Get(h_name); 
   
-  clusterSizeVsCharge_d0->GetYaxis()->SetTitle("Charge");
-  clusterSizeVsCharge_d0->GetXaxis()->SetTitle("Cluster size");
+  // clusterSizeVsCharge_d0->GetYaxis()->SetTitle("Charge");
+  // clusterSizeVsCharge_d0->GetXaxis()->SetTitle("Cluster size");
 
-  clusterSizeVsCharge_d0->GetZaxis()->SetLabelSize(0.02);
+  // clusterSizeVsCharge_d0->GetZaxis()->SetLabelSize(0.02);
 
-  myCanvas->cd();
-  clusterSizeVsCharge_d0->Draw("colz");
-  RootWImage*  clusterSizeVsCharge_d0_img = new RootWImage(myCanvas, ww, wh);
-  myContent->addItem(clusterSizeVsCharge_d0_img);
+  const int maxClusterSizeForSignalDistribution = 3;
+  TH1D* signalDistributionCluster;
+  int nClusters;
+  TAxis* myAxis;
+  for (int i=1; i<=maxClusterSizeForSignalDistribution; ++i) {
+     myCanvas->cd();
+     signalDistributionCluster = clusterSizeVsCharge_d0->ProjectionY(Form("Signal_clusterSize%d", i), i+1, i+1);
+     nClusters = signalDistributionCluster->GetEntries();
+     signalDistributionCluster->SetTitle(Form("Signal on %d clusters with size %d"
+                                              ,nClusters, i));
+     signalDistributionCluster->SetTitleSize(0.2);
+     myAxis = signalDistributionCluster->GetXaxis();
+     myAxis->SetRangeUser(0, i*256);
+     myAxis->SetLabelSize(0.1);
+     myAxis = signalDistributionCluster->GetYaxis();
+     myAxis->SetLabelSize(0.1);
+     signalDistributionCluster->Draw();
+
+     RootWImage* signalDistributionCluster_img = new RootWImage(myCanvas, ww, wh);
+     myContent->addItem(signalDistributionCluster_img);
+  }
+
+  // myCanvas->cd();
+  // clusterSizeVsCharge_d0->Draw("colz");
+  // RootWImage*  clusterSizeVsCharge_d0_img = new RootWImage(myCanvas, ww, wh);
+  // myContent->addItem(clusterSizeVsCharge_d0_img);
 
 
 // ---------------------------------------------------------
@@ -688,6 +711,19 @@ RootWContent* procConvert(string base_name, int id, TFile *f, bool verbose=false
 
     if (verbose) cout << " OK." << endl; 
   }
+
+  h_name = get_hname(base_name, "/rbMonitor_d", id_str);
+  TProfile *rbmon; 
+  rbmon = (TProfile*)f->Get(h_name);
+  if (rbmon) {
+    myCanvas->cd();
+    rbmon->Draw();
+    RootWImage* rbmon_img = new RootWImage(myCanvas, ww, wh); 
+    myContent->addItem(rbmon_img);
+
+    if (verbose) cout << " OK." << endl; 
+  }
+
   return myContent; 
 }
 
@@ -795,7 +831,7 @@ RootWContent* getPhase(string h_name_str, TFile *f, bool verbose=false) {
 
   if (colTime) {
     myCanvas->cd();
-    //myCanvas->SetLogy();
+    gPad->SetLogy();
     colTime->Draw(); // "colz");
     RootWImage* colTime_img3 = new RootWImage(myCanvas, ww, wh); 
     myContent->addItem(colTime_img3);
@@ -811,7 +847,7 @@ RootWContent* getPhase(string h_name_str, TFile *f, bool verbose=false) {
 
   if (colTime) {
     myCanvas->cd();
-    //myCanvas->SetLogy();
+    gPad->SetLogy();
     colTime->Draw(); // "colz");
     RootWImage* colTime_img4 = new RootWImage(myCanvas, ww, wh); 
     myContent->addItem(colTime_img4);
