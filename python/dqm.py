@@ -31,7 +31,7 @@ env_file = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/dqm/fnal201403/setup.sh'
 eos_mount_point = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/data'
 mount_point = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/data'
 
-max_submissions = 5
+max_submissions = 10
 
 #Small class for organizing status information, status should proceed through each value as it goes along
 class STATUS:
@@ -58,6 +58,10 @@ def main():
     if ( len(args) == 1 and 
          args[0] == 'default' ):
         return default()
+
+    if ( len(args) == 1 and 
+         args[0] == 'localcp' ):
+        return localcp()
 
     if ( len(args) == 1 and 
          is_valid_run_str(args[0]) ):
@@ -100,7 +104,7 @@ DATE
 
 def default(arg=None):
     #Start by mounting the eos directory, so we can do 'ls', 'ln -s', etc.
-    mytime = str(datetime.today()).split(' ')[1].replace(':','').replace('.','')
+    #mytime = str(datetime.today()).split(' ')[1].replace(':','').replace('.','')
     #global mount_point
     #mount_point = eos_mount_point+mytime
     mount_eos(mount_point)
@@ -156,6 +160,58 @@ def default(arg=None):
     index(arg)
     sys.stdout.write('Submitted %s jobs\n' % submissions)
 
+def localcp():
+
+    if debug:
+        sys.stdout.write('Getting runs\n')
+    runs = get_runs(True)
+    runs = sorted(runs, reverse=True)
+    sys.stdout.write('Got %s runs\n' % len(runs))
+
+    #loop over all the runs we found
+    for run in runs:
+        # if submissions >= max_submissions:
+        #     break
+        datfile = get_datfiles(run, True)
+        if not datfile:
+            if debug: 
+                sys.stdout.write('No dat file for run %s.\n' %run) 
+            continue
+
+        #Each run may have several dat files, loop over them.
+        for dat in datfile:
+            board = get_board(dat) 
+
+            #check status of processing
+            for job in range(JOBS.nJobs):
+                status = get_job_status(job, dat)
+                if debug:
+                    sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
+                if status == STATUS.published:
+                    if debug: 
+                        sys.stdout.write('Nothing more to do for this job, moving on\n')
+                    continue #continue to next job
+                elif status == STATUS.returned:
+                    if debug: 
+                        sys.stdout.write('Job returned. Publishing\n')
+                    publish(dat, job, run, board)
+                elif status == STATUS.submitted:
+                    if debug: 
+                        sys.stdout.write('Waiting for job to finish processing\n')
+                    break #can't go on with this run until this job is done
+                elif submissions < max_submissions:
+                    #Need to submit the job
+                    run_local_job(job, run, dat)
+                    submissions += 1
+                    break #if just submitted, can't go to the next job yet
+
+    #finish up
+    #umount_eos(mount_point)
+
+    index(arg)
+    sys.stdout.write('Submitted %s jobs\n' % submissions)
+
+
 ####
 
 def get_job_status(job, filename):
@@ -181,6 +237,28 @@ def submit_job(job, run, filename, test=False):
     analyze.analyzeBatch([fullpath], JOBS.modes[job], 
                             dbfile=f, suffix='-'+JOBS.prefix[job],
                             queue=JOBS.queues[job], nevents=JOBS.nevents[job])
+
+copyto_dir = '/tmp/tracktb'
+working_dir = '/tmp/tracktb/working'
+def run_local_job(job, run, board, filename):
+
+	#First, make sure no other process tries to submit
+    f = db_file_name(filename, job, STATUS.submitted, insert=True)
+
+    fullpath = "/" + eosdir+"/"+str(run)+"/"+filename
+
+    analyze.create_working_directory(working_dir,run)
+
+    cp_dat(fullpath, copyto_dir)
+    analyze.create_data_link(filename,run,working_dir,copyto_dir)
+
+    cfg_file = analyze.get_config(analyze.job_config_file,working_dir,
+                                    board, JOBS.nevents[job], working_dir)
+	#Actually do the submission
+    analyze.analyzeLocal(filename, JOBS.modes[job], run, cfg_file)
+
+    analyze.copy_to_eos(working_dir, "/"+processed_dir, run, board. JOBS.modes[job])
+    f = db_file_name(filename, job, STATUS.returned, insert=True)
 
 def publish(fname, job, run, board):                                                                                
     sys.stdout.write('[pub_dqm] run %s ... ' % run)

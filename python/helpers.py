@@ -14,15 +14,18 @@ processed_dir = eosdir+ '/processed'
 tprefix = '.transferred.'
 
 default_mount_point = '/tmp/tracktb'
-daqdir=''
+daqdir='/'+eosdir
+
 
 #
 # Functions that are pretty specific to testbeam setup
 #
 
-def get_runs():
+def get_runs(useeos=False):
     runs = []
     cmd = 'ls -1 %s' % daqdir
+    if useeos:
+        cmd = '%s ls %s' % (eos, daqdir)
     output = proc_cmd(cmd)
     for line in output.split():
         if len(line) > 6: # skip non-valid run and files. 
@@ -60,9 +63,9 @@ def parse_datfilename(fname):
 
 
 def mount_eos(mount_point=default_mount_point):
-    if not os.path.exists(mount_point+"/eos"):
-        cmd = 'mkdir -p %s/eos' % mount_point
-        proc_cmd(cmd)
+    # if not os.path.exists(mount_point+"/eos"):
+    #     cmd = 'mkdir -p %s/eos' % mount_point
+    #     proc_cmd(cmd)
 
     cmd = '%s -b fuse mount %s/eos' % (eos, mount_point)
     output = proc_cmd(cmd)
@@ -73,7 +76,7 @@ def mount_eos(mount_point=default_mount_point):
 
 def umount_eos(mount_point=default_mount_point):
     global daqdir
-    daqdir = ''
+    daqdir = '/'+eosdir
 
     if not os.path.exists(mount_point+"/eos"):
         sys.stdout.write('WARNING: Cannot find a point at %s to unmount\n' % mount_point)
@@ -81,10 +84,10 @@ def umount_eos(mount_point=default_mount_point):
 
     cmd = '%s -b fuse umount %s/eos' % (eos, mount_point)
     output = proc_cmd(cmd)
-    cmd = 'rmdir %s/eos' % mount_point
-    proc_cmd(cmd)
+    #cmd = 'rmdir %s/eos' % mount_point
+    #proc_cmd(cmd)
 
-def get_datfiles(run):
+def get_datfiles(run, useeos=False):
     # sys.stdout.write('getting dat files\n')
     # sys.stdout.flush()
 
@@ -92,6 +95,8 @@ def get_datfiles(run):
     datsize = {}
     maxsize = {'PixelTestBoard1':0, 'PixelTestBoard2':0}
     cmd = 'ls -1 %s/%s' % (daqdir, run)
+    if useeos:
+        cmd = '%s ls -1 %s/%s' % (eos, daqdir, run)
     output = proc_cmd(cmd)
     
     keyword = '.dat'
@@ -127,18 +132,19 @@ def get_datfiles(run):
 
     return datfiles
 
-# def ln_dat(run, board, dat, force=False):
-# 	dstdir = get_rundir(run, board) 
-# 	if os.path.exists(dstdir) and not force: 
-# 	   sys.stdout.write('Skip linking %s_%s.\n' %( run, board))
-# 	   return 
+def cp_dat(dat, copyto_dir):
+    if not os.path.exists(copyto_dir):
+        os.makedirs(copyto_dir)
+        # cmd = "mkdir -p %s" % copyto_dir
+        # proc_cmd(cmd)
+    # srcfile = os.path.join(daqdir, str(run), dat)
+    
+    cmd = '%s cp %s %s' %(eos, dat, copyto_dir)
+    output = proc_cmd(cmd)
+    if debug:
+        print cmd 
+        print output 
 
-# 	cmd = "mkdir -p %s; cd %s" %(dstdir,dstdir) 
-# 	proc_cmd(cmd)
-
-# 	srcfile = os.path.join(datadir, eosdir, str(run), dat)
-# 	cmd = 'ln -s %s .; cd -' %(srcfile)
-# 	output = proc_cmd(cmd)
 
 #
 # Functions that should be fairly generic
@@ -162,8 +168,10 @@ def proc_cmd(cmd, test=False, verbose=1, procdir=None, env=os.environ):
         os.chdir(cwd)
     return stdout
 
-def get_filesize(f):
+def get_filesize(f, useeos=False):
     cmd = 'ls -l %s' % f
+    if useeos:
+        cmd = '%s ls -l %s' % (eos, f)
     output = proc_cmd(cmd)
     items = output.split()
     size = items[4]

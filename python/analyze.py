@@ -28,6 +28,8 @@ work_dir = '/tmp/tracktb/batchsub'
 eos_mount_point = '/tmp/tracktb'
 submit_dir = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/batch'
 
+local_work_dir = '/afs/cern.ch/cmsTracker/Pixel/HRbeamtest/jobsub/fnal201403'
+
 def main():
     parser = OptionParser(usage="usage: %prog [options] filename")
     parser.add_option("-m", "--modes",
@@ -64,8 +66,26 @@ def main():
     else:
         analyzeBatch(args, modes, dbfile=options.dbfile, queue=options.queue, nevents=int(options.nevents))
 
+def create_working_directory(myDir, run):
+    rundir = os.path.join(myDir,'data','cmspixel',str(run).zfill(6))
+    if not os.path.exists(rundir):
+        os.makedirs(rundir)
+
+    outputdirs = [ 'databases', 'histograms', 'lcio', 'logs']
+    for outdir in outputdirs:
+        fullpath_to_dir = os.path.join(myDir,outdir)
+        if not os.path.exists(fullpath_to_dir):
+            os.makedirs(fullpath_to_dir)
+
+def create_data_link(eos_file, run, workdir, link_from_dir):
+    rundir = os.path.join(workdir,'data','cmspixel',str(run).zfill(6))
+    cmd = 'ln -sf %s mtb.bin' % os.path.join(link_from_dir,eos_file)
+    output = proc_cmd(cmd,procdir=rundir)
+    if not os.path.exists(os.readlink(os.path.join(rundir,'mtb.bin'))):
+        sys.stdout.write('mtb.bin is broken symlink\n')
+    
 # eos_file should be full path of file in eos starting with 'eos/' not '/eos/'
-def analyze(eos_file, modes, run=0, board='unknown', dbfile=None, nevents=999999999):
+def analyze(eos_file, modes, run=0, board='unknown', dbfile=None, nevents=999999999, viacopy=False):
     sys.stdout.write('Start analysis of %s:\n\tmodes - %s\n' % (eos_file, modes))
     sys.stdout.flush()
 
@@ -90,13 +110,18 @@ def analyze(eos_file, modes, run=0, board='unknown', dbfile=None, nevents=999999
     sys.stdout.write('\tMount eos at: %s\n' % mount_point)
     sys.stdout.write('\tWork from: %s\n' % workdir)
 
-	#Mount EOS and link data from EOS
+	#Create working directory structure
     rundir = os.path.join(workdir,'data','cmspixel',str(run).zfill(6))
     cmd = 'mkdir -p %s' % rundir
     output = proc_cmd(cmd)
 
-    mount_eos(mount_point)
-    cmd = 'ln -sf %s mtb.bin' % os.path.join(mount_point,eos_file)
+    #copy or link data from EOS
+    if not viacopy:
+        mount_eos(mount_point)
+        cmd = 'ln -sf %s mtb.bin' % os.path.join(mount_point,eos_file)
+    else:
+        cp_dat(eos_file)
+        cmd = 'ln -sf %s mtb.bin' % os.path.join(copyto_dir, eos_file)
     output = proc_cmd(cmd,procdir=rundir)
     if not os.path.exists(os.readlink(os.path.join(rundir,'mtb.bin'))):
         sys.stdout.write('mtb.bin is broken symlink\n')
@@ -127,6 +152,33 @@ def analyze(eos_file, modes, run=0, board='unknown', dbfile=None, nevents=999999
 
     sys.stdout.write('End analysis of %s: modes - %s\n' % (eos_file, modes))
     sys.stdout.flush()
+
+#Everything should be set up and linked at workdir
+def analyzeLocal(workdir, modes, run, cfg_file, dbfile=None):
+    sys.stdout.write('Start analysis of run %s with modes - %s\n' % (run, modes))
+    sys.stdout.write('\tWork from: %s\n' % workdir)
+    sys.stdout.flush()
+
+	#source environment for running
+    procenv = source_bash(env_file)
+
+	#actually run
+    for mode in modes:
+        sys.stdout.write('\nProcessing: jobsub -c %s %s %s\n' % (cfg_file, mode, run))
+        sys.stdout.flush()
+
+        cmd = 'jobsub -c %s %s %s' % (cfg_file, mode, run)
+        output = proc_cmd(cmd, procdir=workdir, env=procenv)
+
+        sys.stdout.write('OK\n')
+
+    #If requested, create a file indicating this is completed
+    if dbfile is not None:
+        open(dbfile,'a').close()
+
+    sys.stdout.write('End analysis of %s: modes - %s\n' % (eos_file, modes))
+    sys.stdout.flush()
+
 
 def analyzeBatch(files, modes=allmodes, suffix='', dbfile=None, queue='1nh', submit=True, nevents=999999999):
     if not os.path.exists(submit_dir):
@@ -162,6 +214,7 @@ def analyzeBatch(files, modes=allmodes, suffix='', dbfile=None, queue='1nh', sub
             cmd = 'bsub -q %s -J %s -o %s.out %s' % (queue, job_name, job_name, script_name)
             proc_cmd(cmd, procdir=submit_dir)
 
+
 def modified_copy(config_file_path, dest_dir, board, nevents, mount_point=eos_mount_point):
     fname = config_file_path.rpartition('/')[2]
     fpath = os.path.join(dest_dir,fname)
@@ -190,6 +243,40 @@ def modified_copy(config_file_path, dest_dir, board, nevents, mount_point=eos_mo
 
     return fpath
 
+def get_config(config_file_path, dest_dir, board, nevents, outpath):
+    fname = config_file_path.rpartition('/')[2]
+    fpath = os.path.join(dest_dir,fname)
+
+    sys.stdout.write('\tCopying config file from %s to %s\n' % (config_file_path, fpath))
+
+    original = open(config_file_path,'r')
+    modified = open(fpath, 'w')
+
+    gearfile = 'gear_cmspixel_telescope_FNAL2013_straight.xml'
+    if board == 'PixelTestBoard2':
+        gearfile = 'gear_cmspixel_telescope_FNAL2013_tilted.xml'
+
+    for line in original:
+        if line.startswith('OutputPath'):
+            modified.write('OutputPath = %s\n' % outpath)
+        elif line.startswith('NumEvents'):
+            modified.write('NumEvents = %d\n' % nevents)
+        elif line.startswith('GearFile'):
+            modified.write('GearFile = %s\n' % gearfile)
+        else:
+            modified.write(line)
+
+    modified.close()
+    original.close()
+
+    return fpath
+
+def copy_to_eos(workdir, eos_out, run, board, modes):
+    outputdirs = [ 'databases', 'histograms', 'lcio', 'logs']
+
+#    for mode in modes:
+
+    pass
 
 if __name__ == '__main__':
     main()
