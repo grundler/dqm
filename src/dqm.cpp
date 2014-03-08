@@ -712,6 +712,23 @@ RootWContent* procConvert(string base_name, int id, TFile *f, bool verbose=false
     if (verbose) cout << " OK." << endl; 
   }
 
+  h_name = get_hname(base_name, "/triggerPhasePixels_d", id_str);
+  TH1D *trigphasepix; 
+  trigphasepix = (TH1D*)f->Get(h_name);
+
+  if (trigphasepix) {
+    // trigphasepix->GetYaxis()->SetTitle("Col");
+    // trigphasepix->GetXaxis()->SetTitle("Events");
+    // trigphasepix->GetZaxis()->SetLabelSize(0.02);
+      
+    myCanvas->cd();
+    trigphasepix->Draw();
+    RootWImage* trigphasepix_img = new RootWImage(myCanvas, ww, wh); 
+    myContent->addItem(trigphasepix_img);
+
+    if (verbose) cout << " OK." << endl; 
+  }
+
   h_name = get_hname(base_name, "/rbMonitor_d", id_str);
   TProfile *rbmon; 
   rbmon = (TProfile*)f->Get(h_name);
@@ -782,8 +799,8 @@ RootWContent* getPhase(string h_name_str, TFile *f, bool verbose=false) {
   TCanvas* myCanvas = new TCanvas(); 
 
   string trigphase = h_name_str + "triggerPhase";
-  string dataphase = h_name_str + "dataPhase";
   string trighit = trigphase + "Hit";
+  string dataphase = h_name_str + "dataPhase";
   string datahit = dataphase + "Hit";
   
   char *h_name = new char[trigphase.size()+1]; 
