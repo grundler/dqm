@@ -98,17 +98,25 @@ def get_datfiles(run, useeos=False):
     if useeos:
         cmd = '%s ls -1 %s/%s' % (eos, daqdir, run)
     output = proc_cmd(cmd)
+    #sys.stdout.write('getting datfiles. output: %s' % output)
+    #sys.stdout.flush()
     
     keyword = '.dat'
     for line in output.split():
         if keyword in line:
             #check if transfer marker exists
             t = os.path.join(daqdir, str(run), tprefix+line)
-            if not os.path.exists(t):
-                continue
-            #check file before adding it
+            if not useeos:
+                if not os.path.exists(t):
+                    continue
+            else:
+                cmd = '%s ls -a %s' % (eos, t)
+                stdout, rc = proc_cmd(cmd, get_returncode=True)
+                if rc != 0:
+                    continue
+            #check file before adding i
             f = os.path.join(daqdir, str(run), line)
-            filesize = get_filesize(f) 
+            filesize = get_filesize(f,useeos) 
             if filesize > 10: 
                 # sys.stdout.write('%s : %d\n' % (line, filesize))
                 # sys.stdout.flush()
@@ -139,18 +147,21 @@ def cp_dat(dat, copyto_dir):
         # proc_cmd(cmd)
     # srcfile = os.path.join(daqdir, str(run), dat)
     
-    cmd = '%s cp %s %s' %(eos, dat, copyto_dir)
-    output = proc_cmd(cmd)
-    if debug:
-        print cmd 
-        print output 
+    #cmd = '%s cp %s %s' %(eos, dat, copyto_dir)
+    cmd = 'xrdcp -f root://eoscms/%s %s/' % (dat, copyto_dir)
+    output, rc = proc_cmd(cmd, get_returncode=True)
+    sys.stdout.write('%s\n' % output)
+    # if debug:
+    #     print cmd 
+    #     print output 
+    return rc
 
 
 #
 # Functions that should be fairly generic
 #
 
-def proc_cmd(cmd, test=False, verbose=1, procdir=None, env=os.environ):
+def proc_cmd(cmd, test=False, verbose=1, procdir=None, env=os.environ, get_returncode=False):
     if test:
         sys.stdout.write(cmd+'\n')
         return 
@@ -162,10 +173,13 @@ def proc_cmd(cmd, test=False, verbose=1, procdir=None, env=os.environ):
     process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, env=env)
     process.wait()
     stdout = process.communicate()[0]
+    rc = process.returncode
     if 'error' in stdout:
         sys.stdout.write(stdout)
     if procdir != None:
         os.chdir(cwd)
+    if get_returncode:
+        return stdout, rc
     return stdout
 
 def get_filesize(f, useeos=False):

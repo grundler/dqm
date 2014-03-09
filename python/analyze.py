@@ -176,7 +176,7 @@ def analyzeLocal(workdir, modes, run, cfg_file, dbfile=None):
     if dbfile is not None:
         open(dbfile,'a').close()
 
-    sys.stdout.write('End analysis of %s: modes - %s\n' % (eos_file, modes))
+    sys.stdout.write('End analysis of %s: modes - %s\n' % (run, modes))
     sys.stdout.flush()
 
 
@@ -271,12 +271,19 @@ def get_config(config_file_path, dest_dir, board, nevents, outpath):
 
     return fpath
 
-def copy_to_eos(workdir, eos_out, run, board, modes):
+def copy_to_eos(workdir, eos_out, run, board):
     outputdirs = [ 'databases', 'histograms', 'lcio', 'logs']
 
-#    for mode in modes:
+    for outdir in outputdirs:
+        from_dir = os.path.join(workdir,outdir)
+        to_dir = os.path.join(eos_out,board,outdir)
+        cmd = 'ls -1 %s' % from_dir
+        output = proc_cmd(cmd)
+        for line in output.split():
+            if line.startswith(str(run).zfill(6)):
+                cmd = 'xrdcp -f %s/%s root://eoscms/%s/%s' % (from_dir, line, to_dir, line)
+                proc_cmd(cmd)
 
-    pass
 
 if __name__ == '__main__':
     main()

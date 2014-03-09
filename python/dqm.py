@@ -31,7 +31,7 @@ env_file = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/dqm/fnal201403/setup.sh'
 eos_mount_point = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/data'
 mount_point = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/data'
 
-max_submissions = 10
+max_submissions = 5
 
 #Small class for organizing status information, status should proceed through each value as it goes along
 class STATUS:
@@ -62,10 +62,6 @@ def main():
     if ( len(args) == 1 and 
          args[0] == 'localcp' ):
         return localcp()
-
-    if ( len(args) == 1 and 
-         is_valid_run_str(args[0]) ):
-        return default(args[0])
 
     function = getattr(dqm, args[0])
     return function(args[1:])
@@ -102,7 +98,7 @@ DATE
 \n''')
 
 
-def default(arg=None):
+def default():
     #Start by mounting the eos directory, so we can do 'ls', 'ln -s', etc.
     #mytime = str(datetime.today()).split(' ')[1].replace(':','').replace('.','')
     #global mount_point
@@ -157,11 +153,13 @@ def default(arg=None):
     #finish up
     umount_eos(mount_point)
 
-    index(arg)
+    index()
     sys.stdout.write('Submitted %s jobs\n' % submissions)
 
 def localcp():
 
+    submissions = 0
+    
     if debug:
         sys.stdout.write('Getting runs\n')
     runs = get_runs(True)
@@ -170,8 +168,8 @@ def localcp():
 
     #loop over all the runs we found
     for run in runs:
-        # if submissions >= max_submissions:
-        #     break
+        if submissions >= 1:
+            break
         datfile = get_datfiles(run, True)
         if not datfile:
             if debug: 
@@ -193,22 +191,22 @@ def localcp():
                     continue #continue to next job
                 elif status == STATUS.returned:
                     if debug: 
-                        sys.stdout.write('Job returned. Publishing\n')
-                    publish(dat, job, run, board)
+                        sys.stdout.write('Job returned. Should publish\n')
+                    # publish(dat, job, run, board)
                 elif status == STATUS.submitted:
                     if debug: 
                         sys.stdout.write('Waiting for job to finish processing\n')
                     break #can't go on with this run until this job is done
                 elif submissions < max_submissions:
                     #Need to submit the job
-                    run_local_job(job, run, dat)
+                    run_local_job(job, run, board, dat)
                     submissions += 1
                     break #if just submitted, can't go to the next job yet
 
     #finish up
     #umount_eos(mount_point)
 
-    index(arg)
+    index()
     sys.stdout.write('Submitted %s jobs\n' % submissions)
 
 
@@ -249,15 +247,18 @@ def run_local_job(job, run, board, filename):
 
     analyze.create_working_directory(working_dir,run)
 
-    cp_dat(fullpath, copyto_dir)
+    if cp_dat(fullpath, copyto_dir) != 0:
+        sys.stdout.write('Could not copy dat file from EOS\n')
+        db_file_name(filename, job, STATUS.submitted, remove=True)
+        return
     analyze.create_data_link(filename,run,working_dir,copyto_dir)
 
     cfg_file = analyze.get_config(analyze.job_config_file,working_dir,
                                     board, JOBS.nevents[job], working_dir)
 	#Actually do the submission
-    analyze.analyzeLocal(filename, JOBS.modes[job], run, cfg_file)
+    analyze.analyzeLocal(working_dir, JOBS.modes[job], run, cfg_file)
 
-    analyze.copy_to_eos(working_dir, "/"+processed_dir, run, board. JOBS.modes[job])
+    analyze.copy_to_eos(working_dir, "/"+processed_dir, run, board)
     f = db_file_name(filename, job, STATUS.returned, insert=True)
 
 def publish(fname, job, run, board):                                                                                
@@ -276,7 +277,7 @@ def publish(fname, job, run, board):
         print output
     sys.stdout.write(' OK.\n')
     
-def index(arg): 
+def index(): 
     sys.stdout.write('[make index] ... ')
     sys.stdout.flush()
     procenv = source_bash(env_file)
@@ -350,10 +351,14 @@ def index(arg):
     fo.close()
     sys.stdout.write(' OK.\n')
 
-def db_file_name(basename, job, status, insert=False):
+def db_file_name(basename, job, status, insert=False, remove=False):
     f = os.path.join(dbdir, basename + '.' + JOBS.prefix[job] + '.' + STATUS.prefix[status])
     if insert:
         open(f, 'a').close()
+    if remove:
+        if os.path.exists(f):
+            os.remove(f)
+            return
     return f
 
 def parse_db(dbfile):
