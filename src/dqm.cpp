@@ -712,6 +712,23 @@ RootWContent* procConvert(string base_name, int id, TFile *f, bool verbose=false
     if (verbose) cout << " OK." << endl; 
   }
 
+  h_name = get_hname(base_name, "/pulseHeight_d", id_str);
+  TH1D *hpulseheight; 
+  hpulseheight = (TH1D*)f->Get(h_name);
+
+  if (hpulseheight) {
+    // hpulseheight->GetYaxis()->SetTitle("Col");
+    // hpulseheight->GetXaxis()->SetTitle("Events");
+    // hpulseheight->GetZaxis()->SetLabelSize(0.02);
+      
+    myCanvas->cd();
+    hpulseheight->Draw();
+    RootWImage* pulseheight_img = new RootWImage(myCanvas, ww, wh); 
+    myContent->addItem(pulseheight_img);
+
+    if (verbose) cout << " OK." << endl; 
+  }
+
   h_name = get_hname(base_name, "/triggerPhasePixels_d", id_str);
   TH1D *trigphasepix; 
   trigphasepix = (TH1D*)f->Get(h_name);
