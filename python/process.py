@@ -156,7 +156,7 @@ def clean_working_directory(myDir, run):
                 try:
                     os.remove(line)
                 except OSError as e:
-                    if e.errno != errno.ENOENT
+                    if e.errno != errno.ENOENT:
                         raise
 
 def create_data_link(link_from_dir, filename, workdir, run):
@@ -204,7 +204,7 @@ def get_config(config_file_path, dest_dir, board, nevents, outpath):
         if line.startswith('OutputPath'):
             modified.write('OutputPath = %s\n' % outpath)
         elif line.startswith('NumEvents'):
-            modified.write('NumEvents = %d\n' % nevents)
+            modified.write('NumEvents = %s\n' % nevents)
         elif line.startswith('GearFile'):
             modified.write('GearFile = %s\n' % gearfile)
         else:
@@ -258,7 +258,7 @@ def process_batch(run, modes,
                                 suffix, script_dir)
 
     #Submit job
-    job_name = 'r'+run+suffix[:2]
+    job_name = 'r'+str(run)+suffix[:2]
     sys.stdout.write('Submitting %s to %s queue\n' % (script_name, queue))
     cmd = 'bsub -q %s -J %s -o %s.out %s' % (queue, job_name, job_name, script_name)
     utils.proc_cmd(cmd, procdir=script_dir)
@@ -277,11 +277,11 @@ def create_script(run, modes,
     analyzer = os.path.realpath(__file__).rstrip('c') #cheap way to remove the c in pyc if it's there
 
     #Create Submission file
-    script_name = os.path.join(script_dir, 'submit-Run'+run+suffix+'.sh')
+    script_name = os.path.join(script_dir, 'submit-Run'+str(run)+suffix+'.sh')
     submit_file = open(script_name,'w')
     submit_file.write('#!/bin/bash\n')
     submit_file.write('%s' % analyzer)
-    submit_file.write(' -m \'%s\'' % ','join(modes))
+    submit_file.write(' -m \'%s\'' % ','.join(modes))
     submit_file.write(' -n %d' % nevents)
     submit_file.write(' -w \'%s\'' % workingdir)
     submit_file.write(' -c \'%s\'' % cfgfile)
