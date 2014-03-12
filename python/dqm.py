@@ -34,10 +34,10 @@ max_submissions = 5
 
 def main():
     parser = OptionParser(usage="usage: %prog [options]")
-    parser.add_option("-r", "--run",
+    parser.add_option("-r", "--runs",
                         action="store",
-                        dest="run",
-                        help="Set run to publish")
+                        dest="runs",
+                        help="set runs to process")
     # parser.add_option("-b", "--board",
     #                     action="store",
     #                     dest="board",
@@ -72,7 +72,7 @@ def main():
     default(options.eos_mounted, options.batch)
 
 
-Def usage():
+def usage():
     sys.stdout.write('''
 NAME
     dqm.py (v3) 
