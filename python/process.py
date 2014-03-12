@@ -48,21 +48,31 @@ def main():
                         dest="cfg_file",
                         default=job_config_file,
                         help="Base configuration file for running")
+    parser.add_option("-d", "--add_to_db",
+                        action="store",
+                        dest="add_to_db",
+                        default=None,
+                        help="Insert markers into DB")
     parser.add_option("-e", "--eos_mounted",
                         action="store_true",
                         dest="eos_mounted",
                         default=False,
                         help="run on mounted EOS directory")
+    parser.add_option("-b", "--batch",
+                        action="store_true",
+                        dest="batch",
+                        default=False,
+                        help="Set to run on batch queue")
     parser.add_option("-q", "--queue",
                         action="store",
                         dest="queue",
                         default='1nh',
-                        help="Set batch queue to submit to (only for batch)")
-    parser.add_option("-d", "--dbfile",
+                        help="Set batch queue to submit to (only for remote)")
+    parser.add_option("-s", "--suffix",
                         action="store",
-                        dest="dbfile",
-                        default=None,
-                        help="Name a db file to create upon completion")
+                        dest="suffix",
+                        default='',
+                        help="Suffix for batch job name")
     (options, args) = parser.parse_args()
 
     if len(args) < 1:
@@ -70,16 +80,28 @@ def main():
 
     modes = options.modes.split(',')
 
-    process_run(args[0], modes, options.working_dir, options.cfg_file, options.nevents, options.eos_mounted)
+    if not options.batch:
+        process_run(args[0], modes, 
+                    options.working_dir, options.cfg_file, options.nevents, 
+                    options.eos_mounted, options.add_to_db)
+    else:
+        process_batch(args[0], modes,
+                    options.working_dir, options.cfg_file, options.nevents, 
+                    options.eos_mounted, options.add_to_db,
+                    options.queue, options.suffix)
 
+####
 
-def process_run(run, modes, workingdir=default_work_dir, cfgfile=job_config_file, nevents=999999999, eos_mounted=False):
+def process_run(run, modes, 
+                workingdir=default_work_dir, cfgfile=job_config_file, nevents=999999999, 
+                eos_mounted=False, add_to_db=None):
     #create working directory
     create_working_directory(workingdir, run)
 
     #get dat file
     datfiles = utils.get_datfile_names(run,eos_mounted)
     for dat in datfiles:
+
         board = utils.get_board(dat)
 
         #link dat file and get any slcio files we need
@@ -105,6 +127,9 @@ def process_run(run, modes, workingdir=default_work_dir, cfgfile=job_config_file
         if not eos_mounted:
             copy_to_eos(workingdir, processed_dir, run, board)
             clean_working_directory(workingdir, run)
+
+    if add_to_db is not None:
+        open(add_to_db,'a').close()
 
 def create_working_directory(myDir, run):
     rundir = os.path.join(myDir,'data','cmspixel',str(run).zfill(6))
@@ -223,50 +248,53 @@ def copy_from_eos(workdir, eos_out, run, board):
         cmd = 'xrdcp -f root://eoscms//%s %s/' % (from_file, to_dir)
         utils.proc_cmd(cmd)
 
-    # for outdir in outputdirs:
-    #     from_dir = os.path.join(eos_out,board,outdir)
-    #     to_dir = os.path.join(workdir,outdir)
-    #     cmd = '%s ls -1 %s' % (eos, from_dir)
-    #     output = utils.proc_cmd(cmd)
-    #     for line in output.split():
-    #         if line.startswith(str(run).zfill(6)):
-    #             cmd = 'xrdcp -f root://eoscms//%s/%s %s/' % (from_dir, line, to_dir)
-    #             utils.proc_cmd(cmd)
+def process_batch(run, modes, 
+                    workingdir=default_work_dir, cfgfile=job_config_file, nevents=999999999, 
+                    eos_mounted=False, add_to_db=None,
+                    queue='1nh', suffix='', script_dir=None):
+    script_name = create_script(run, modes,
+                                workingdir, cfgfile, nevents,
+                                eos_mounted, add_to_db,
+                                suffix, script_dir)
 
+    #Submit job
+    job_name = 'r'+run+suffix[:2]
+    sys.stdout.write('Submitting %s to %s queue\n' % (script_name, queue))
+    cmd = 'bsub -q %s -J %s -o %s.out %s' % (queue, job_name, job_name, script_name)
+    utils.proc_cmd(cmd, procdir=script_dir)
 
-def create_script(file, modes, suffix='', dbfile=None, script_dir=None):
-    if not os.path.exists(submit_dir):
-        cmd = 'mkdir -p %s' % submit_dir
-        utils.proc_cmd(cmd)
+def create_script(run, modes, 
+                    workingdir=default_work_dir, cfgfile=job_config_file, nevents=999999999, 
+                    eos_mounted=False, add_to_db=None,
+                    suffix='', script_dir=None):
+    if script_dir is not None:
+        if not os.path.exists(script_dir):
+            cmd = 'mkdir -p %s' % submit_dir
+            utils.proc_cmd(cmd)
+    else:
+        script_dir = '.'
 
     analyzer = os.path.realpath(__file__).rstrip('c') #cheap way to remove the c in pyc if it's there
 
-    for filename in files:
-        sys.stdout.write('%s\n' % filename)
-        sys.stdout.flush()
-        run, board = parse_datfilename(filename)
+    #Create Submission file
+    script_name = os.path.join(script_dir, 'submit-Run'+run+suffix+'.sh')
+    submit_file = open(script_name,'w')
+    submit_file.write('#!/bin/bash\n')
+    submit_file.write('%s' % analyzer)
+    submit_file.write(' -m \'%s\'' % ','join(modes))
+    submit_file.write(' -n %d' % nevents)
+    submit_file.write(' -w \'%s\'' % workingdir)
+    submit_file.write(' -c \'%s\'' % cfgfile)
+    if eos_mounted:
+        submit_file.write(' -e')
+    if add_to_db is not None:
+        submit_file.write(' -d \'%s\'' % add_to_db)
+    submit_file.write(' %d\n' % run)
+    submit_file.close()
+    cmd = 'chmod a+x %s' % script_name
+    utils.proc_cmd(cmd)
 
-        #Create Submission file
-        script_name = os.path.join(submit_dir, 'submit-Run'+run+'_'+board+suffix+'.sh')
-        submit_file = open(script_name,'w')
-        submit_file.write('#!/bin/bash\n')
-        submit_file.write('%s' % analyzer)
-        for mode in modes:
-            submit_file.write(' -m\'%s\'' % mode)
-        if dbfile is not None:
-            submit_file.write(' -d\'%s\'' % dbfile)
-        submit_file.write(' -n%d' % nevents)
-        submit_file.write(' %s\n' % filename)
-        submit_file.close()
-        cmd = 'chmod a+x %s' % script_name
-        utils.proc_cmd(cmd)
-
-        #Submit job
-        if submit:
-            job_name = 'r'+run+'_b'+board[-1]+suffix[:2]
-            sys.stdout.write('Submitting %s to %s queue\n' % (script_name, queue))
-            cmd = 'bsub -q %s -J %s -o %s.out %s' % (queue, job_name, job_name, script_name)
-            utils.proc_cmd(cmd, procdir=submit_dir)
+    return script_name
 
 # def analyzeBatch(files, modes=allmodes, suffix='', dbfile=None, queue='1nh', submit=True, nevents=999999999):
 #     if not os.path.exists(submit_dir):
