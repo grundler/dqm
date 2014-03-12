@@ -110,7 +110,7 @@ def process_run(run, modes,
         if eos_mounted:
             link_from_dir = os.path.join(eos_mount_point, eosdir, run)
         else:
-            utils.cp_dat(os.path.join(eosdir,run,dat), rundir)
+            utils.cp_dat(os.path.join(eosdir,str(run),dat), rundir)
             copy_from_eos(workingdir, processed_dir, run, board)
         create_data_link(link_from_dir, dat, workingdir, run)
 
