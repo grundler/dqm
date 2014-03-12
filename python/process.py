@@ -9,7 +9,8 @@ Primarily intended to be submitted to batch queues, but can be run locally
 __author__ = "Ulysses Grundler <grundler@cern.ch>"
 
 import sys
-import os
+import os, errno
+import shutil
 #from datetime import datetime
 from optparse import OptionParser
 
@@ -67,18 +68,10 @@ def main():
     if len(args) < 1:
         parser.error("Too few arguments")
 
-    # if options.modes is None:
-    #     modes = allmodes
-    # else:
-    #     modes = options.modes
     modes = options.modes.split(',')
 
     process_run(args[0], modes, options.working_dir, options.cfg_file, options.nevents, options.eos_mounted)
 
-    # if len(args) == 1:
-    #     analyze(args[0], modes, dbfile=options.dbfile, nevents=int(options.nevents))
-    # else:
-    #     analyzeBatch(args, modes, dbfile=options.dbfile, queue=options.queue, nevents=int(options.nevents))
 
 def process_run(run, modes, workingdir=default_work_dir, cfgfile=job_config_file, nevents=999999999, eos_mounted=False):
     #create working directory
@@ -87,16 +80,19 @@ def process_run(run, modes, workingdir=default_work_dir, cfgfile=job_config_file
     #get dat file
     datfiles = utils.get_datfile_names(run,eos_mounted)
     for dat in datfiles:
-        #link dat file
-        link_from_dir = workingdir
+        board = utils.get_board(dat)
+
+        #link dat file and get any slcio files we need
+        rundir = os.path.join(workingdir,'data','cmspixel',str(run).zfill(6))
+        link_from_dir = rundir
         if eos_mounted:
             link_from_dir = os.path.join(eos_mount_point, eosdir, run)
         else:
-            utils.cp_dat(os.path.join(eosdir,run,dat), workingdir)
+            utils.cp_dat(os.path.join(eosdir,run,dat), rundir)
+            copy_from_eos(workingdir, processed_dir, run, board)
         create_data_link(link_from_dir, dat, workingdir, run)
 
         #set configuration
-        board = utils.get_board(dat)
         outpath = workingdir
         if eos_mounted:
             outpath = os.path.join(eos_mount_point, processed_dir, board)
@@ -108,7 +104,7 @@ def process_run(run, modes, workingdir=default_work_dir, cfgfile=job_config_file
         #copy to eos
         if not eos_mounted:
             copy_to_eos(workingdir, processed_dir, run, board)
-
+            clean_working_directory(workingdir, run)
 
 def create_working_directory(myDir, run):
     rundir = os.path.join(myDir,'data','cmspixel',str(run).zfill(6))
@@ -120,6 +116,23 @@ def create_working_directory(myDir, run):
         fullpath_to_dir = os.path.join(myDir,outdir)
         if not os.path.exists(fullpath_to_dir):
             os.makedirs(fullpath_to_dir)
+
+def clean_working_directory(myDir, run):
+    datapath = os.path.join(myDir,'data','cmspixel',str(run).zfill(6))
+    shutil.rmtree(datapath)
+
+    subdirs = ['databases', 'histograms', 'lcio', 'logs']
+    for subdir in subdirs:
+        fullpath_to_dir = os.path.join(myDir, subdir)
+        cmd = 'ls -1 %s' % fullpath_to_dir
+        output = utils.proc_cmd(cmd)
+        for line in output.split():
+            if line.startswith(str(run).zfill(6)):
+                try:
+                    os.remove(line)
+                except OSError as e:
+                    if e.errno != errno.ENOENT
+                        raise
 
 def create_data_link(link_from_dir, filename, workdir, run):
     rundir = os.path.join(workdir,'data','cmspixel',str(run).zfill(6))
@@ -189,6 +202,36 @@ def copy_to_eos(workdir, eos_out, run, board):
             if line.startswith(str(run).zfill(6)):
                 cmd = 'xrdcp -f %s/%s root://eoscms//%s/%s' % (from_dir, line, to_dir, line)
                 utils.proc_cmd(cmd)
+
+#copy any slcio files we might need
+def copy_from_eos(workdir, eos_out, run, board):
+    outputdirs = ['databases', 'lcio']
+    slcio_databases = ['prealignment', 'reference']
+    slcio_lcio = ['convert', 'clustering', 'hitmaker']
+
+    for slcio in slcio_databases:
+        slcioname = str(run).zfill(6) + '-' + slcio + '.slcio'
+        from_file = os.path.join(eos_out, board, 'databases', slcioname)
+        to_dir = os.path.join(workdir,'databases')
+        cmd = 'xrdcp -f root://eoscms//%s %s/' % (from_file, to_dir)
+        utils.proc_cmd(cmd)
+
+    for slcio in slcio_lcio:
+        slcioname = str(run).zfill(6) + '-' + slcio + '.slcio'
+        from_file = os.path.join(eos_out, board, 'lcio', slcioname)
+        to_dir = os.path.join(workdir,'lcio')
+        cmd = 'xrdcp -f root://eoscms//%s %s/' % (from_file, to_dir)
+        utils.proc_cmd(cmd)
+
+    # for outdir in outputdirs:
+    #     from_dir = os.path.join(eos_out,board,outdir)
+    #     to_dir = os.path.join(workdir,outdir)
+    #     cmd = '%s ls -1 %s' % (eos, from_dir)
+    #     output = utils.proc_cmd(cmd)
+    #     for line in output.split():
+    #         if line.startswith(str(run).zfill(6)):
+    #             cmd = 'xrdcp -f root://eoscms//%s/%s %s/' % (from_dir, line, to_dir)
+    #             utils.proc_cmd(cmd)
 
 
 def create_script(file, modes, suffix='', dbfile=None, script_dir=None):
