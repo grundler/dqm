@@ -14,6 +14,16 @@ default_mount_point = '/tmp/tracktb'
 # Functions that are pretty specific to testbeam setup
 #
 
+def db_file_name(basename, job, status, insert=False, remove=False):
+    f = os.path.join(dbdir, basename + '.' + JOBS.prefix[job] + '.' + STATUS.prefix[status])
+    if insert:
+        open(f, 'a').close()
+    if remove:
+        if os.path.exists(f):
+            os.remove(f)
+            return
+    return f
+
 def get_runs(eos_mounted=True):
     runs = []
     cmd = 'ls -1 %s' % daqdir
