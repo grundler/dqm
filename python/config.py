@@ -20,6 +20,7 @@ tprefix = '.transferred.'
 job_config_file = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/jobsub/fnal201403/batch.cfg'
 default_work_dir = '/tmp/tracktb/working'
 analysis_env_file = '/afs/cern.ch/user/g/grundler/work/public/fnal2013/cmspxltb-analysis/build_env.sh'
+submit_dir = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/batch'
 
 
 #Small class for organizing status information, status should proceed through each value as it goes along
