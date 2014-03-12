@@ -5,7 +5,7 @@ import os
 import time
 
 import HTML
-import handling
+import utils
 from config import *
 
 def main():
@@ -14,7 +14,7 @@ def main():
 def index(): 
     sys.stdout.write('[make index] ... ')
     sys.stdout.flush()
-    procenv = handling.source_bash(dqm_env_file)
+    procenv = utils.source_bash(dqm_env_file)
     targetdir = procenv['TARGETDIRECTORY']
 
     if debug: 
@@ -94,7 +94,7 @@ def parse_db(dbfile):
     stem_suffix = dbfile.partition('.dat.')
 
     #get run and board
-    run, board = handling.parse_datfilename(stem_suffix[0])
+    run, board = utils.parse_datfilename(stem_suffix[0])
 
     #Get job and status
     labels = (stem_suffix[2]).partition('.')

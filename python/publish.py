@@ -5,10 +5,10 @@ import os
 from optparse import OptionParser
 
 from config import *
-import handling
+import utils
 
 def main():
-    parser = OptionParser(usage="usage: %prog [options] filename")
+    parser = OptionParser(usage="usage: %prog -r <run> -b <board>")
     parser.add_option("-r", "--run",
                         action="store",
                         dest="run",
@@ -30,20 +30,20 @@ def publish(run, board):
     sys.stdout.write('[pub_dqm] run %s ... ' % run)
     sys.stdout.flush()
 
-    procenv = handling.source_bash(dqm_env_file)
+    procenv = utils.source_bash(dqm_env_file)
     histdir = os.path.join(eos_mount_point, processed_dir, board, 'histograms')
-    handling.mount_eos(eos_mount_point)
+    utils.mount_eos(eos_mount_point)
 
     #Indicate we're published in the db
     #db_file_name(fname, job, STATUS.published, insert=True)
 
     cmd = 'dqm %s %s' %(board, str(run).zfill(6))
-    output = handling.proc_cmd(cmd, procdir=histdir, env=procenv)
+    output = utils.proc_cmd(cmd, procdir=histdir, env=procenv)
     if debug: 
         print output
     sys.stdout.write(' OK.\n')
 
-    handling.umount_eos(eos_mount_point)
+    utils.umount_eos(eos_mount_point)
 
 if __name__ == '__main__':
     main()
