@@ -2,13 +2,9 @@
 import sys
 import os
 import subprocess
-from datetime import datetime
+#from datetime import datetime
 
 from config import *
-
-#eos command
-eos="/afs/cern.ch/project/eos/installation/cms/bin/eos.select"
-
 
 default_mount_point = '/tmp/tracktb'
 

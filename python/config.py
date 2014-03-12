@@ -6,6 +6,9 @@ dataset='FNAL2014'
 dbdir = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/data/'+dataset+'/.db/'
 dqm_env_file = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/dqm/fnal201403/setup.sh'
 
+#eos command
+eos="/afs/cern.ch/project/eos/installation/cms/bin/eos.select"
+
 #EOS settings
 eos_mount_point = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/data'
 eosdir = 'eos/cms/store/cmst3/group/tracktb/'+dataset
