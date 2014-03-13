@@ -22,6 +22,8 @@ default_work_dir = '/tmp/tracktb/working'
 analysis_env_file = '/afs/cern.ch/user/g/grundler/work/public/fnal2013/cmspxltb-analysis/build_env.sh'
 submit_dir = '/afs/cern.ch/cms/Tracker/Pixel/HRbeamtest/batch'
 
+#publish settings
+default_publish_dir = '/tmp/tracktb/publish'
 
 #Small class for organizing status information, status should proceed through each value as it goes along
 class STATUS:
