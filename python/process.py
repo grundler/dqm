@@ -132,6 +132,9 @@ def process_run(run, modes,
         open(add_to_db,'a').close()
 
 def create_working_directory(myDir, run):
+    if debug:
+        sys.stdout.write('Creating working directory at %s for run %s\n' % (myDir, str(run)))
+        sys.stdout.flush()
     rundir = os.path.join(myDir,'data','cmspixel',str(run).zfill(6))
     if not os.path.exists(rundir):
         os.makedirs(rundir)
@@ -143,6 +146,10 @@ def create_working_directory(myDir, run):
             os.makedirs(fullpath_to_dir)
 
 def clean_working_directory(myDir, run):
+    if debug:
+        sys.stdout.write('Cleaning %s of files for run %s\n' % (myDir, str(run)))
+        sys.stdout.flush()
+
     datapath = os.path.join(myDir,'data','cmspixel',str(run).zfill(6))
     shutil.rmtree(datapath)
 
@@ -150,16 +157,26 @@ def clean_working_directory(myDir, run):
     for subdir in subdirs:
         fullpath_to_dir = os.path.join(myDir, subdir)
         cmd = 'ls -1 %s' % fullpath_to_dir
-        output = utils.proc_cmd(cmd)
+        output, rc = utils.proc_cmd(cmd, get_returncode=True)
+        if debug:
+            sys.stdout.write('rc: %d\toutput: %s\n' % (rc, output))
+            sys.stdout.flush()
         for line in output.split():
-            if line.startswith(str(run).zfill(6)):
+            if str(run).zfill(6) in line:
                 try:
-                    os.remove(line)
+                    if debug:
+                        sys.stdout.write('removing %s\n' % line)
+                        sys.stdout.flush()
+                    os.remove(os.path.join(fullpath_to_dir,line))
                 except OSError as e:
                     if e.errno != errno.ENOENT:
                         raise
 
 def create_data_link(link_from_dir, filename, workdir, run):
+    if debug:
+        sys.stdout.write('Linking dat file for run %s\n' % str(run))
+        sys.stdout.flush()
+
     rundir = os.path.join(workdir,'data','cmspixel',str(run).zfill(6))
     cmd = 'ln -sf %s mtb.bin' % os.path.join(link_from_dir,filename)
     output = utils.proc_cmd(cmd,procdir=rundir)
@@ -188,6 +205,10 @@ def submit(workdir, modes, run, cfg_file):
     sys.stdout.flush()
 
 def get_config(config_file_path, dest_dir, board, nevents, outpath):
+    if debug:
+        sys.stdout.write('Getting configuration file\n')
+        sys.stdout.flush()
+
     fname = config_file_path.rpartition('/')[2]
     fpath = os.path.join(dest_dir,fname)
 
@@ -216,6 +237,9 @@ def get_config(config_file_path, dest_dir, board, nevents, outpath):
     return fpath
 
 def copy_to_eos(workdir, eos_out, run, board):
+    if debug:
+        sys.stdout.write('Copying output files for run %s to eos\n' % str(run))
+        sys.stdout.flush()
     outputdirs = [ 'databases', 'histograms', 'lcio', 'logs']
 
     for outdir in outputdirs:
@@ -230,7 +254,9 @@ def copy_to_eos(workdir, eos_out, run, board):
 
 #copy any slcio files we might need
 def copy_from_eos(workdir, eos_out, run, board):
-    outputdirs = ['databases', 'lcio']
+    if debug:
+        sys.stdout.write('Copying slcio files for run %s from eos\n' % str(run))
+        sys.stdout.flush()
     slcio_databases = ['prealignment', 'reference']
     slcio_lcio = ['convert', 'clustering', 'hitmaker']
 
