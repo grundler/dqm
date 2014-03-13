@@ -41,7 +41,7 @@ def main():
     parser.add_option("-w", "--working_dir",
                         action="store",
                         dest="working_dir",
-                        default='/tmp/tracktb/working',
+                        default=default_work_dir,
                         help="Working directory for job")
     parser.add_option("-c", "--cfg_file",
                         action="store",
