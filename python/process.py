@@ -17,6 +17,8 @@ from optparse import OptionParser
 from config import *
 import utils
 
+really_mount = False #don't mount if called from another script
+
 #define full set of modes
 allmodes =['convert', 'clustering', 'hitmaker', 'align', 'tracks']
 
@@ -99,6 +101,9 @@ def process_run(run, modes,
     create_working_directory(workingdir, run)
 
     #get dat file
+    if eos_mounted:
+        if really_mount:
+            utils.mount_eos(eos_mount_point)
     datfiles = utils.get_datfile_names(run,eos_mounted)
     for dat in datfiles:
 
@@ -127,6 +132,10 @@ def process_run(run, modes,
         if not eos_mounted:
             copy_to_eos(workingdir, processed_dir, run, board)
             clean_working_directory(workingdir, run)
+
+    if eos_mounted:
+        if really_mount:
+            utils.umount_eos(eos_mount_point)
 
     if add_to_db is not None:
         open(add_to_db,'a').close()
@@ -457,4 +466,5 @@ def create_script(run, modes,
 
 
 if __name__ == '__main__':
+    really_mount = True
     main()

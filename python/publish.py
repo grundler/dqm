@@ -7,6 +7,8 @@ from optparse import OptionParser
 from config import *
 import utils
 
+really_mount = False #to avoid mounting/unmounting if called from dqm
+
 def main():
     parser = OptionParser(usage="usage: %prog -r <run> -b <board>")
     parser.add_option("-r", "--run",
@@ -55,7 +57,8 @@ def publish(run, board,
     histdir = os.path.join(workingdir, 'histograms')
     if eos_mounted:
         histdir = os.path.join(eos_mount_point, processed_dir, board,'histograms')
-        utils.mount_eos(eos_mount_point)
+        if really_mount:
+            utils.mount_eos(eos_mount_point)
     else:
         copy_from_eos(workingdir, processed_dir, run, board)
 
@@ -66,7 +69,8 @@ def publish(run, board,
     sys.stdout.write(' OK.\n')
 
     if eos_mounted:
-        utils.umount_eos(eos_mount_point)
+        if really_mount:
+            utils.umount_eos(eos_mount_point)
     else:
         clean_working_directory(workingdir, run)
 
@@ -127,4 +131,5 @@ def clean_working_directory(myDir, run):
 
 
 if __name__ == '__main__':
+    really_mount = True
     main()
