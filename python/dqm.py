@@ -50,7 +50,7 @@ def main():
 
     if ( len(args) == 1 and
         args[0] == 'default' ):
-        default(eos_mounted=True, batch=True)
+        default(eos_mounted=False, batch=True)
     else:
         default(options.eos_mounted, options.batch)
 
@@ -92,7 +92,6 @@ def default(eos_mounted=False, batch=False):
                         sys.stdout.write('Nothing more to do for this job, moving on\n')
                     continue #continue to next job
                 elif status == STATUS.returned:
-                    continue
                     if debug: 
                         sys.stdout.write('Job returned. Publishing\n')
                     publish_job(job, run, board, dat, eos_mounted)
