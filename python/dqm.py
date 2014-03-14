@@ -22,7 +22,8 @@ import publish
 import index
 
 
-max_submissions = 2
+max_submissions = 5
+begin_valid_run = 172000
 
 def main():
     parser = OptionParser(usage="usage: %prog [options]")
@@ -47,11 +48,14 @@ def main():
     (options, args) = parser.parse_args()
 
 
-    default(options.eos_mounted, options.batch)
+    if ( len(args) == 1 and
+        args[0] == 'default' ):
+        default(eos_mounted=True, batch=True)
+    else:
+        default(options.eos_mounted, options.batch)
 
 
-
-def default(eos_mounted=False, batch=True):
+def default(eos_mounted=False, batch=False):
     #Start by mounting the eos directory, so we can do 'ls', 'ln -s', etc.
     if eos_mounted:
         utils.mount_eos(eos_mount_point)
@@ -66,9 +70,7 @@ def default(eos_mounted=False, batch=True):
 
     #loop over all the runs we found
     for run in runs:
-        if submissions >= max_submissions:
-            break
-        if run < 171000:
+        if run < begin_valid_run:
             break
         datfile = utils.get_datfile_names(run, eos_mounted)
         if not datfile:
