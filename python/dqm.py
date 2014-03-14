@@ -21,23 +21,15 @@ import process
 import publish
 import index
 
-# if hasattr(datetime, 'strptime'):
-#     strptime = datetime.strptime
-# else:
-#     strptime = lambda date_string, format: datetime(
-#         *(time.strptime(date_string, format)[0:6]))
 
-#debug = False
-
-
-max_submissions = 5
+max_submissions = 2
 
 def main():
     parser = OptionParser(usage="usage: %prog [options]")
     parser.add_option("-r", "--runs",
                         action="store",
                         dest="runs",
-                        help="set runs to process")
+                        help="set runs to process, not yet operational")
     # parser.add_option("-b", "--board",
     #                     action="store",
     #                     dest="board",
@@ -54,60 +46,13 @@ def main():
                         help="Set to run on batch queue")
     (options, args) = parser.parse_args()
 
-    # args = sys.argv[1:]
-    # if len(args) == 0 :
-    #     return usage()
-
-    # if ( len(args) == 1 and 
-    #      args[0] == 'default' ):
-    #     return default()
-
-    # if ( len(args) == 1 and 
-    #      args[0] == 'localcp' ):
-    #     return localcp()
-
-    # function = getattr(dqm, args[0])
-    # return function(args[1:])
 
     default(options.eos_mounted, options.batch)
 
 
-def usage():
-    sys.stdout.write('''
-NAME
-    dqm.py (v3) 
-
-
-SYNOPSIS
-    dqm.py default 
-           run the default procedure 
-
-    dqm.py 30301
-           only for run 30301
-
-    dqm.py 30301-30350
-           run the range between 30301-30350
-
-
-AUTHOR
-    Ulysses Grundler
-
-
-REPORTING BUGS
-    Report bugs to <grundler@cern.ch>.
-
-
-DATE
-    February 2014 
-
-\n''')
-
 
 def default(eos_mounted=False, batch=True):
     #Start by mounting the eos directory, so we can do 'ls', 'ln -s', etc.
-    #mytime = str(datetime.today()).split(' ')[1].replace(':','').replace('.','')
-    #global mount_point
-    #mount_point = eos_mount_point+mytime
     if eos_mounted:
         utils.mount_eos(eos_mount_point)
 
@@ -121,8 +66,10 @@ def default(eos_mounted=False, batch=True):
 
     #loop over all the runs we found
     for run in runs:
-        # if submissions >= max_submissions:
-        #     break
+        if submissions >= max_submissions:
+            break
+        if run < 171000:
+            break
         datfile = utils.get_datfile_names(run, eos_mounted)
         if not datfile:
             if debug: 
@@ -143,19 +90,19 @@ def default(eos_mounted=False, batch=True):
                         sys.stdout.write('Nothing more to do for this job, moving on\n')
                     continue #continue to next job
                 elif status == STATUS.returned:
+                    continue
                     if debug: 
                         sys.stdout.write('Job returned. Publishing\n')
-                    utils.db_file_name(dat, job, STATUS.published, insert=True)
-                    publish.publish(run, board)
+                    publish_job(job, run, board, dat, eos_mounted)
                 elif status == STATUS.submitted:
                     if debug: 
                         sys.stdout.write('Waiting for job to finish processing\n')
                     break #can't go on with this run until this job is done
                 elif submissions < max_submissions:
                     #Need to submit the job
-                    submit_job(job, run, dat, eos_mounted, batch)
+                    process_job(job, run, dat, eos_mounted, batch)
+                    submissions += 1 #only care if we're submitting to LSF batch
                     if batch:
-                        submissions += 1 #only care if we're submitting to LSF batch
                         break #if just submitted, can't go to the next job yet
 
     #finish up
@@ -177,7 +124,7 @@ def get_job_status(job, filename):
 		    status = st
 	return status
 	
-def submit_job(job, run, filename, eos_mounted=False, batch=False):
+def process_job(job, run, filename, eos_mounted=False, batch=False):
 	#First, make sure no other process tries to submit
     f = utils.db_file_name(filename, job, STATUS.submitted, insert=True)
 
@@ -193,6 +140,12 @@ def submit_job(job, run, filename, eos_mounted=False, batch=False):
                                 nevents=JOBS.nevents[job],
                                 eos_mounted=eos_mounted, add_to_db=f,
                                 queue=JOBS.queues[job], suffix='-'+JOBS.prefix[job], script_dir=submit_dir)
+
+def publish_job(job, run, board, filename, eos_mounted=False):
+	#First, make sure no other process tries to submit
+    f = utils.db_file_name(filename, job, STATUS.published, insert=True)
+
+    publish.publish(run, board, eos_mounted=eos_mounted)
 
 ####
 
