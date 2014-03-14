@@ -31,6 +31,7 @@ class STATUS:
 	  prefix = ['submitted', 'returned', 'published', 'failed', 'unknown']
 	  colors = ['aqua', 'teal' , 'green', 'red', 'white']
 
+
 full_events = 999999999
 short_events = 5000
 
@@ -41,3 +42,21 @@ class JOBS:
     modes = [ ['convert', 'clustering', 'hitmaker'], ['tracks_prealign'], [] ]
     queues = ['1nh', '1nh', '']
     nevents = [full_events, full_events, 0]
+
+class RunStatus:
+    def __init__(self, run, boards, datfiles, status=None):
+        self.run = run
+        self.boards = boards
+        self.datfiles = datfiles
+        if status is None:
+            self.status = [ [STATUS.unknown]*JOBS.nJobs for board in boards ] 
+        else:
+            self.status = status
+
+    def __str__(self):
+        return "%d, %s, %s, %s" % (self.run, self.boards, self.datfiles, self.status)
+
+    def readline(self, in_line):
+        self.run = int(in_line.partition(',')[0])
+
+        
