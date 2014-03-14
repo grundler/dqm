@@ -48,6 +48,9 @@ def publish(run, board,
     sys.stdout.write('[pub_dqm] run %s ... ' % run)
     sys.stdout.flush()
 
+    if add_to_db is not None:
+        open(add_to_db,'a').close()
+
     procenv = utils.source_bash(dqm_env_file)
     histdir = os.path.join(workingdir, 'histograms')
     if eos_mounted:
