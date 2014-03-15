@@ -20,20 +20,28 @@ def index():
     if debug: 
         sys.stdout.write('\tget db files\n')
     sys.stdout.flush()
-    runs = []
+    #runs = []
     run_status = {}
-    dblist = os.listdir("%s" % dbdir)
-    for line in dblist:
-        run, board, job, status = parse_db(line)
-        if run not in runs:
-            runs.append(run)
-        label = str(run).zfill(6)+'_'+board
-        if (label) not in run_status:
-            run_status[label] = {}
-        if job not in run_status[label] or run_status[label][job] < status:
-            run_status[label][job] = status
+    
+    for j in range(JOBS.nJobs):
+        for s in range(STATUS.nStatus):
+            dbsubdir = os.path.join(dbdir,JOBS.prefix[j],STATUS.prefix[s])
+            # sys.stdout.write('subdir %s\n' % dbsubdir)
+            dblist = os.listdir("%s" % dbsubdir)
+            for line in dblist:
+                # sys.stdout.write('\t%s\n' % line)
+                run, board, job, status = parse_db(line)
+                # sys.stdout.write('\t\t%s %s %s %s\n' % (str(run), board, JOBS.prefix[job], STATUS.prefix[status]))
+                # sys.stdout.flush()
+                # if run not in runs:
+                #     runs.append(run)
+                label = str(run).zfill(6)+'_'+board
+                if (label) not in run_status:
+                    run_status[label] = {}
+                if job not in run_status[label] or run_status[label][job] < status:
+                    run_status[label][job] = status
 
-    runs = sorted(runs, reverse=True)
+    # runs = sorted(runs, reverse=True)
 
     header_row = ['Run']
     header_row.extend(JOBS.prefix[:-1])

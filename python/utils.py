@@ -15,7 +15,12 @@ default_mount_point = '/tmp/tracktb'
 #
 
 def db_file_name(basename, job, status, insert=False, remove=False):
-    f = os.path.join(dbdir, basename + '.' + JOBS.prefix[job] + '.' + STATUS.prefix[status])
+    pathname = os.path.join(dbdir, JOBS.prefix[job], STATUS.prefix[status])
+    if not os.path.isdir(pathname):
+        os.makedirs(pathname)
+    # f = os.path.join(dbdir, basename + '.' + JOBS.prefix[job] + '.' + STATUS.prefix[status])
+    filename = basename + '.' + JOBS.prefix[job] + '.' + STATUS.prefix[status]
+    f = os.path.join(pathname, filename)
     if insert:
         open(f, 'a').close()
     if remove:
@@ -23,6 +28,15 @@ def db_file_name(basename, job, status, insert=False, remove=False):
             os.remove(f)
             return
     return f
+
+def get_job_status(job, filename):
+	status = STATUS.unknown
+	for st in range(STATUS.nStatus):
+		fullname = db_file_name(filename, job, st)
+		if os.path.isfile(fullname):
+		    status = st
+	return status
+
 
 def get_runs(eos_mounted=True):
     runs = []

@@ -23,7 +23,7 @@ import index
 
 
 max_submissions = 5
-begin_valid_run = 172000
+begin_valid_run = 174100
 
 def main():
     parser = OptionParser(usage="usage: %prog [options]")
@@ -98,7 +98,7 @@ def default(eos_mounted=False, batch=False):
 
             #check status of processing
             for job in range(JOBS.nJobs):
-                status = get_job_status(job, dat)
+                status = utils.get_job_status(job, dat)
                 if debug:
                     sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
                 if status == STATUS.published:
@@ -167,7 +167,7 @@ def loop_processing(eos_mounted=False, batch=False):
 
                     #check status of processing
                     for job in range(JOBS.nJobs):
-                        status = get_job_status(job, dat)
+                        status = utils.get_job_status(job, dat)
                         if debug:
                             sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
                         if status == STATUS.submitted:
@@ -227,7 +227,7 @@ def loop_publishing(eos_mounted=False, batch=False):
         
                     #check status of processing
                     for job in range(JOBS.nJobs):
-                        status = get_job_status(job, dat)
+                        status = utils.get_job_status(job, dat)
                         if debug:
                             sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
                         if status == STATUS.published:
@@ -255,14 +255,6 @@ def loop_publishing(eos_mounted=False, batch=False):
 
 ####
 
-def get_job_status(job, filename):
-	status = STATUS.unknown
-	for st in range(STATUS.nStatus):
-		fullname = utils.db_file_name(filename, job, st)
-		if os.path.isfile(fullname):
-		    status = st
-	return status
-	
 def process_job(job, run, filename, eos_mounted=False, batch=False):
 	#First, make sure no other process tries to submit
     f = utils.db_file_name(filename, job, STATUS.submitted, insert=True)
