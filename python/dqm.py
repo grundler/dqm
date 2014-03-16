@@ -115,7 +115,7 @@ def default(eos_mounted=False, batch=False):
                     break #can't go on with this run until this job is done
                 elif submissions < max_submissions:
                     #Need to submit the job
-                    process_job(job, run, dat, eos_mounted, batch)
+                    process_job(job, dat, eos_mounted, batch)
                     submissions += 1
                     if batch:
                         break #if just submitted, can't go to the next job yet
@@ -173,7 +173,7 @@ def loop_processing(eos_mounted=False, batch=False):
                         if status == STATUS.submitted:
                             break #don't allow going to next job if not ready
                         elif status == STATUS.unknown:
-                            process_job(job, run, dat, eos_mounted, batch)
+                            process_job(job, dat, eos_mounted, batch)
                             submissions += 1
                             restart = True
                             if batch:
@@ -255,7 +255,7 @@ def loop_publishing(eos_mounted=False, batch=False):
 
 ####
 
-def process_job(job, run, filename, eos_mounted=False, batch=False):
+def process_job(job, filename, eos_mounted=False, batch=False):
 	#First, make sure no other process tries to submit
     f = utils.db_file_name(filename, job, STATUS.submitted, insert=True)
 
@@ -263,11 +263,11 @@ def process_job(job, run, filename, eos_mounted=False, batch=False):
     #give a file name to be created upon completion
     f = utils.db_file_name(filename, job, STATUS.returned, insert=False)
     if not batch:
-        process.process_run(run, JOBS.modes[job],
+        process.process_dat(filename, JOBS.modes[job],
                             nevents=JOBS.nevents[job],
                             eos_mounted=eos_mounted, add_to_db=f)
     else:
-        process.process_batch(run, JOBS.modes[job],
+        process.process_batch(filename, JOBS.modes[job],
                                 nevents=JOBS.nevents[job],
                                 eos_mounted=eos_mounted, add_to_db=f,
                                 queue=JOBS.queues[job], suffix='-'+JOBS.prefix[job], script_dir=submit_dir)
