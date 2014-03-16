@@ -104,7 +104,7 @@ def umount_eos(mount_point=default_mount_point):
     #cmd = 'rmdir %s/eos' % mount_point
     #proc_cmd(cmd)
 
-def get_datfile_names(run, eos_mounted=True):
+def get_datfile_names(run, eos_mounted=False):
     # sys.stdout.write('getting dat files\n')
     # sys.stdout.flush()
 
