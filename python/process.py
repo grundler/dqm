@@ -101,37 +101,50 @@ def process_run(run, modes,
     create_working_directory(workingdir, run)
 
     #get dat file
+    datfiles = utils.get_datfile_names(run)
+    for dat in datfiles:
+        process_dat(dat, modes, 
+                workingdir, cfgfile, nevents, 
+                eos_mounted, add_to_db)
+
+
+def process_dat(datfile, modes, 
+                workingdir=default_work_dir, cfgfile=job_config_file, nevents=999999999, 
+                eos_mounted=False, add_to_db=None):
+
+    run, board = utils.parse_datfilename(datfile)
+
+    #create working directory
+    workdir = create_working_directory(workingdir, run, board)
+
+    #get dat file
     if eos_mounted:
         if really_mount:
             utils.mount_eos(eos_mount_point)
-    datfiles = utils.get_datfile_names(run,eos_mounted)
-    for dat in datfiles:
 
-        board = utils.get_board(dat)
+    #link dat file and get any slcio files we need
+    rundir = os.path.join(workdir,'data','cmspixel',str(run).zfill(6))
+    link_from_dir = rundir
+    if eos_mounted:
+        link_from_dir = os.path.join(eos_mount_point, eosdir, run)
+    else:
+        utils.cp_dat(os.path.join(eosdir,str(run),datfile), rundir)
+        copy_from_eos(workdir, processed_dir, run, board)
+    create_data_link(link_from_dir, dat, workdir, run)
 
-        #link dat file and get any slcio files we need
-        rundir = os.path.join(workingdir,'data','cmspixel',str(run).zfill(6))
-        link_from_dir = rundir
-        if eos_mounted:
-            link_from_dir = os.path.join(eos_mount_point, eosdir, run)
-        else:
-            utils.cp_dat(os.path.join(eosdir,str(run),dat), rundir)
-            copy_from_eos(workingdir, processed_dir, run, board)
-        create_data_link(link_from_dir, dat, workingdir, run)
+    #set configuration
+    outpath = workdir
+    if eos_mounted:
+        outpath = os.path.join(eos_mount_point, processed_dir, board)
+        config_file = get_config(cfgfile, workdir, board, nevents, outpath)
 
-        #set configuration
-        outpath = workingdir
-        if eos_mounted:
-            outpath = os.path.join(eos_mount_point, processed_dir, board)
-        config_file = get_config(cfgfile, workingdir, board, nevents, outpath)
+    #submit
+    submit(workdir, modes, run, config_file)
 
-        #submit
-        submit(workingdir, modes, run, config_file)
-
-        #copy to eos
-        if not eos_mounted:
-            copy_to_eos(workingdir, processed_dir, run, board)
-            clean_working_directory(workingdir, run)
+    #copy to eos
+    if not eos_mounted:
+        copy_to_eos(workdir, processed_dir, run, board)
+        clean_working_directory(workingdir, run, board)
 
     if eos_mounted:
         if really_mount:
@@ -140,31 +153,42 @@ def process_run(run, modes,
     if add_to_db is not None:
         open(add_to_db,'a').close()
 
-def create_working_directory(myDir, run):
+
+def create_working_directory(myDir, run, board=None):
     if debug:
         sys.stdout.write('Creating working directory at %s for run %s\n' % (myDir, str(run)))
         sys.stdout.flush()
-    rundir = os.path.join(myDir,'data','cmspixel',str(run).zfill(6))
+    basedir = myDir
+    if board is not None:
+        basedir = os.path.join(myDir,board)
+
+    rundir = os.path.join(basedir,'data','cmspixel',str(run).zfill(6))
     if not os.path.exists(rundir):
         os.makedirs(rundir)
 
     outputdirs = [ 'databases', 'histograms', 'lcio', 'logs']
     for outdir in outputdirs:
-        fullpath_to_dir = os.path.join(myDir,outdir)
+        fullpath_to_dir = os.path.join(basedir,outdir)
         if not os.path.exists(fullpath_to_dir):
             os.makedirs(fullpath_to_dir)
 
-def clean_working_directory(myDir, run):
+    return basedir
+
+def clean_working_directory(myDir, run, board=None):
     if debug:
         sys.stdout.write('Cleaning %s of files for run %s\n' % (myDir, str(run)))
         sys.stdout.flush()
 
-    datapath = os.path.join(myDir,'data','cmspixel',str(run).zfill(6))
+    basedir = myDir
+    if board is not None:
+        basedir = os.path.join(myDir,board)
+
+    datapath = os.path.join(basedir,'data','cmspixel',str(run).zfill(6))
     shutil.rmtree(datapath)
 
     subdirs = ['databases', 'histograms', 'lcio', 'logs']
     for subdir in subdirs:
-        fullpath_to_dir = os.path.join(myDir, subdir)
+        fullpath_to_dir = os.path.join(basedir, subdir)
         cmd = 'ls -1 %s' % fullpath_to_dir
         output, rc = utils.proc_cmd(cmd, get_returncode=True)
         if debug:
@@ -249,6 +273,7 @@ def copy_to_eos(workdir, eos_out, run, board):
     if debug:
         sys.stdout.write('Copying output files for run %s to eos\n' % str(run))
         sys.stdout.flush()
+
     outputdirs = [ 'databases', 'histograms', 'lcio', 'logs']
 
     for outdir in outputdirs:
@@ -266,6 +291,7 @@ def copy_from_eos(workdir, eos_out, run, board):
     if debug:
         sys.stdout.write('Copying slcio files for run %s from eos\n' % str(run))
         sys.stdout.flush()
+
     slcio_databases = ['prealignment', 'reference']
     slcio_lcio = ['convert', 'clustering', 'hitmaker']
 
