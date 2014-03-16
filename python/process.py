@@ -130,13 +130,13 @@ def process_dat(datfile, modes,
     else:
         utils.cp_dat(os.path.join(eosdir,str(run),datfile), rundir)
         copy_from_eos(workdir, processed_dir, run, board)
-    create_data_link(link_from_dir, dat, workdir, run)
+    create_data_link(link_from_dir, datfile, workdir, run)
 
     #set configuration
     outpath = workdir
     if eos_mounted:
         outpath = os.path.join(eos_mount_point, processed_dir, board)
-        config_file = get_config(cfgfile, workdir, board, nevents, outpath)
+    config_file = get_config(cfgfile, workdir, board, nevents, outpath)
 
     #submit
     submit(workdir, modes, run, config_file)
