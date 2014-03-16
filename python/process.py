@@ -83,7 +83,7 @@ def main():
     modes = options.modes.split(',')
 
     if not options.batch:
-        process_run(args[0], modes, 
+        process_dat(args[0], modes, 
                     options.working_dir, options.cfg_file, options.nevents, 
                     options.eos_mounted, options.add_to_db)
     else:
@@ -309,22 +309,24 @@ def copy_from_eos(workdir, eos_out, run, board):
         cmd = 'xrdcp -f root://eoscms//%s %s/' % (from_file, to_dir)
         utils.proc_cmd(cmd)
 
-def process_batch(run, modes, 
+def process_batch(datfile, modes, 
                     workingdir=default_work_dir, cfgfile=job_config_file, nevents=999999999, 
                     eos_mounted=False, add_to_db=None,
                     queue='1nh', suffix='', script_dir=None):
-    script_name = create_script(run, modes,
+    script_name = create_script(datfile, modes,
                                 workingdir, cfgfile, nevents,
                                 eos_mounted, add_to_db,
                                 suffix, script_dir)
 
+    run, board = utils.parse_datfilename(datfile)
+
     #Submit job
-    job_name = 'r'+str(run)+suffix[:2]
+    job_name = 'r'+str(run)+'b'+board[-1]+suffix[:2]
     sys.stdout.write('Submitting %s to %s queue\n' % (script_name, queue))
     cmd = 'bsub -q %s -J %s -o %s.out %s' % (queue, job_name, job_name, script_name)
     utils.proc_cmd(cmd, procdir=script_dir)
 
-def create_script(run, modes, 
+def create_script(datfile, modes, 
                     workingdir=default_work_dir, cfgfile=job_config_file, nevents=999999999, 
                     eos_mounted=False, add_to_db=None,
                     suffix='', script_dir=None):
@@ -337,8 +339,10 @@ def create_script(run, modes,
 
     analyzer = os.path.realpath(__file__).rstrip('c') #cheap way to remove the c in pyc if it's there
 
+    run, board = utils.parse_datfilename(datfile)
+
     #Create Submission file
-    script_name = os.path.join(script_dir, 'submit-Run'+str(run)+suffix+'.sh')
+    script_name = os.path.join(script_dir, 'submit-Run'+str(run)+'-'+board+suffix+'.sh')
     submit_file = open(script_name,'w')
     submit_file.write('#!/bin/bash\n')
     submit_file.write('%s' % analyzer)
