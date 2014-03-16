@@ -295,8 +295,8 @@ string RootWImage::saveFiles(int smallWidth, int smallHeight) {
   int canW = int(imgW * thumb_compression_);
   int canH = int(imgH * thumb_compression_);
   
-  string smallCanvasCompleteFileName = targetDirectory_+"/"+smallCanvasFileName;
-  string largeCanvasCompleteFileName = targetDirectory_+"/"+largeCanvasFileBaseName + ".png";
+  string smallCanvasCompleteFileName = targetDirectory_+"/"+relativeHtmlDirectory_+"/"+smallCanvasFileName;
+  string largeCanvasCompleteFileName = targetDirectory_+"/"+relativeHtmlDirectory_+"/"+largeCanvasFileBaseName + ".png";
 
   gErrorIgnoreLevel = 1500;
   myCanvas_->cd();
@@ -308,7 +308,7 @@ string RootWImage::saveFiles(int smallWidth, int smallHeight) {
 
   string fileTypeList;
   for (vector<string>::iterator it=fileTypeV_.begin(); it!=fileTypeV_.end(); ++it) {
-    largeCanvasCompleteFileName = targetDirectory_+"/"+largeCanvasFileBaseName + "." + (*it);
+    largeCanvasCompleteFileName = targetDirectory_+"/"+relativeHtmlDirectory_+"/"+largeCanvasFileBaseName + "." + (*it);
     myCanvas_->Print(largeCanvasCompleteFileName.c_str());
     if (it!=fileTypeV_.begin()) fileTypeList+="|";
     fileTypeList+=(*it);

@@ -26,6 +26,11 @@
 using namespace std;
 using namespace boost::filesystem;
 
+const static string convertSubDir = "convert";
+const static string clusterSubDir = "clusters";
+const static string tracksSubDir = "tracks";
+
+
 int main(int argc, char** argv) {
   // string data_dir;
   void setTDRStyle(); 
@@ -430,6 +435,27 @@ int main(int argc, char** argv) {
       cerr << "Couldn't create directory " << targetDirectory << endl;
       return 0;
     }
+    string subdir = targetDirectory + "/" + convertSubDir;
+    if (!boost::filesystem::exists( subdir )) {
+       if (!boost::filesystem::create_directory(subdir)) {
+          cerr << "Couldn't create directory " << subdir << endl;
+          return 0;
+       }
+    }
+    subdir = targetDirectory + "/" + clusterSubDir;
+    if (!boost::filesystem::exists( subdir )) {
+       if (!boost::filesystem::create_directory(subdir)) {
+          cerr << "Couldn't create directory " << subdir << endl;
+          return 0;
+       }
+    }
+    subdir = targetDirectory + "/" + tracksSubDir;
+    if (!boost::filesystem::exists( subdir )) {
+       if (!boost::filesystem::create_directory(subdir)) {
+          cerr << "Couldn't create directory " << subdir << endl;
+          return 0;
+       }
+    }
   }
 
   // targetDirectory += "/" + data_type + "_" + run_number;
@@ -488,7 +514,7 @@ RootWContent* procCluster(string base_name, int id, TFile *f, bool verbose=false
 
   myCanvas->cd();
   pixelPerEvent_d0->Draw(); 
-  RootWImage* pixelPerEvent_d0_img = new RootWImage(myCanvas, ww, wh);
+  RootWImage* pixelPerEvent_d0_img = new RootWImage(myCanvas, ww, wh, clusterSubDir);
   myContent->addItem(pixelPerEvent_d0_img);
 
   // ---------------------------------------------------------
@@ -507,7 +533,7 @@ RootWContent* procCluster(string base_name, int id, TFile *f, bool verbose=false
   myCanvas->cd();
 
   chargeMap_d0->Draw("colz");
-  RootWImage*  chargeMap_d0_img = new RootWImage(myCanvas, ww, wh); 
+  RootWImage*  chargeMap_d0_img = new RootWImage(myCanvas, ww, wh, clusterSubDir); 
   myContent->addItem(chargeMap_d0_img);
   
 
@@ -521,7 +547,7 @@ RootWContent* procCluster(string base_name, int id, TFile *f, bool verbose=false
 
   myCanvas->cd();
   clusterSignal_d0->Draw();
-  RootWImage*  clusterSignal_d0_img = new RootWImage(myCanvas, ww, wh); 
+  RootWImage*  clusterSignal_d0_img = new RootWImage(myCanvas, ww, wh, clusterSubDir); 
   myContent->addItem(clusterSignal_d0_img);
 
   // ---------------------------------------------------------
@@ -538,7 +564,7 @@ RootWContent* procCluster(string base_name, int id, TFile *f, bool verbose=false
 
   myCanvas->cd();
   hitMap_d0->Draw("colz");
-  RootWImage* hitMap_d0_img = new RootWImage(myCanvas, ww, wh); 
+  RootWImage* hitMap_d0_img = new RootWImage(myCanvas, ww, wh, clusterSubDir); 
   myContent->addItem(hitMap_d0_img);
 
 
@@ -552,7 +578,7 @@ RootWContent* procCluster(string base_name, int id, TFile *f, bool verbose=false
 
   myCanvas->cd();
   clustersize_d0->Draw();
-  RootWImage*  clustersize_d0_img = new RootWImage(myCanvas, ww, wh);
+  RootWImage*  clustersize_d0_img = new RootWImage(myCanvas, ww, wh, clusterSubDir);
   myContent->addItem(clustersize_d0_img);
 
   // ---------------------------------------------------------
@@ -564,7 +590,7 @@ RootWContent* procCluster(string base_name, int id, TFile *f, bool verbose=false
 
   myCanvas->cd();
   Xclusterwidth_d0->Draw();
-  RootWImage*  Xclusterwidth_d0_img = new RootWImage(myCanvas, ww, wh); 
+  RootWImage*  Xclusterwidth_d0_img = new RootWImage(myCanvas, ww, wh, clusterSubDir); 
   myContent->addItem(Xclusterwidth_d0_img);
 
   // ---------------------------------------------------------
@@ -577,7 +603,7 @@ RootWContent* procCluster(string base_name, int id, TFile *f, bool verbose=false
 
   myCanvas->cd();
   Yclusterwidth_d0->Draw();
-  RootWImage*  Yclusterwidth_d0_img = new RootWImage(myCanvas, ww, wh); 
+  RootWImage*  Yclusterwidth_d0_img = new RootWImage(myCanvas, ww, wh, clusterSubDir); 
   myContent->addItem(Yclusterwidth_d0_img);
 
 
@@ -611,7 +637,7 @@ RootWContent* procCluster(string base_name, int id, TFile *f, bool verbose=false
      myAxis->SetLabelSize(0.1);
      signalDistributionCluster->Draw();
 
-     RootWImage* signalDistributionCluster_img = new RootWImage(myCanvas, ww, wh);
+     RootWImage* signalDistributionCluster_img = new RootWImage(myCanvas, ww, wh, clusterSubDir);
      myContent->addItem(signalDistributionCluster_img);
   }
 
@@ -659,7 +685,7 @@ RootWContent* procCluster(string base_name, int id, TFile *f, bool verbose=false
       
       myCanvas->cd();
       colTime->Draw("colz");
-      RootWImage* colTime_img = new RootWImage(myCanvas, ww, wh); 
+      RootWImage* colTime_img = new RootWImage(myCanvas, ww, wh, clusterSubDir); 
       myContent->addItem(colTime_img);
     }
   }
@@ -706,7 +732,7 @@ RootWContent* procConvert(string base_name, int id, TFile *f, bool verbose=false
       
     myCanvas->cd();
     colTime->Draw("colz");
-    RootWImage* colTime_img = new RootWImage(myCanvas, ww, wh); 
+    RootWImage* colTime_img = new RootWImage(myCanvas, ww, wh, convertSubDir); 
     myContent->addItem(colTime_img);
 
     if (verbose) cout << " OK." << endl; 
@@ -723,7 +749,7 @@ RootWContent* procConvert(string base_name, int id, TFile *f, bool verbose=false
       
     myCanvas->cd();
     hpulseheight->Draw();
-    RootWImage* pulseheight_img = new RootWImage(myCanvas, ww, wh); 
+    RootWImage* pulseheight_img = new RootWImage(myCanvas, ww, wh, convertSubDir); 
     myContent->addItem(pulseheight_img);
 
     if (verbose) cout << " OK." << endl; 
@@ -740,7 +766,7 @@ RootWContent* procConvert(string base_name, int id, TFile *f, bool verbose=false
       
     myCanvas->cd();
     trigphasepix->Draw();
-    RootWImage* trigphasepix_img = new RootWImage(myCanvas, ww, wh); 
+    RootWImage* trigphasepix_img = new RootWImage(myCanvas, ww, wh, convertSubDir); 
     myContent->addItem(trigphasepix_img);
 
     if (verbose) cout << " OK." << endl; 
@@ -752,7 +778,7 @@ RootWContent* procConvert(string base_name, int id, TFile *f, bool verbose=false
   if (rbmon) {
     myCanvas->cd();
     rbmon->Draw();
-    RootWImage* rbmon_img = new RootWImage(myCanvas, ww, wh); 
+    RootWImage* rbmon_img = new RootWImage(myCanvas, ww, wh, convertSubDir); 
     myContent->addItem(rbmon_img);
 
     if (verbose) cout << " OK." << endl; 
@@ -835,7 +861,7 @@ RootWContent* getPhase(string h_name_str, TFile *f, bool verbose=false) {
   if (colTime) {
     myCanvas->cd();
     colTime->Draw(); // "colz");
-    RootWImage* colTime_img = new RootWImage(myCanvas, ww, wh); 
+    RootWImage* colTime_img = new RootWImage(myCanvas, ww, wh, convertSubDir); 
     myContent->addItem(colTime_img);
 
     if (verbose) cout << " OK." << endl; 
@@ -850,7 +876,7 @@ RootWContent* getPhase(string h_name_str, TFile *f, bool verbose=false) {
   if (colTime) {
     myCanvas->cd();
     colTime->Draw(); // "colz");
-    RootWImage* colTime_img2 = new RootWImage(myCanvas, ww, wh); 
+    RootWImage* colTime_img2 = new RootWImage(myCanvas, ww, wh, convertSubDir); 
     myContent->addItem(colTime_img2);
 
     if (verbose) cout << " OK." << endl; 
@@ -867,7 +893,7 @@ RootWContent* getPhase(string h_name_str, TFile *f, bool verbose=false) {
     myCanvas->cd();
     gPad->SetLogy();
     colTime->Draw(); // "colz");
-    RootWImage* colTime_img3 = new RootWImage(myCanvas, ww, wh); 
+    RootWImage* colTime_img3 = new RootWImage(myCanvas, ww, wh, convertSubDir); 
     myContent->addItem(colTime_img3);
 
     if (verbose) cout << " OK." << endl; 
@@ -883,7 +909,7 @@ RootWContent* getPhase(string h_name_str, TFile *f, bool verbose=false) {
     myCanvas->cd();
     gPad->SetLogy();
     colTime->Draw(); // "colz");
-    RootWImage* colTime_img4 = new RootWImage(myCanvas, ww, wh); 
+    RootWImage* colTime_img4 = new RootWImage(myCanvas, ww, wh, convertSubDir); 
     myContent->addItem(colTime_img4);
 
     if (verbose) cout << " OK." << endl; 
@@ -1122,7 +1148,7 @@ RootWContent* procOnTrackCluster(string base_name, int id, TFile *f, bool verbos
   myCanvas->cd();
 
   pl0_onTrackHits->Draw("colz");
-  RootWImage*  pl0_onTrackHits_img = new RootWImage(myCanvas, ww, wh);
+  RootWImage*  pl0_onTrackHits_img = new RootWImage(myCanvas, ww, wh, tracksSubDir);
   myContent->addItem(pl0_onTrackHits_img);
 
   if (verbose) cout << " OK." << endl; 
@@ -1164,7 +1190,7 @@ RootWContent* procTracking(string base_name, int id, TFile *f, bool verbose=fals
   pl0_residualX->GetXaxis()->SetTitle("X residual [mm]");
 
   pl0_residualX->Draw();
-  RootWImage*  pl0_residualX_img = new RootWImage(myCanvas, ww, wh);
+  RootWImage*  pl0_residualX_img = new RootWImage(myCanvas, ww, wh, tracksSubDir);
   myContent->addItem(pl0_residualX_img);
 
 
@@ -1181,7 +1207,7 @@ RootWContent* procTracking(string base_name, int id, TFile *f, bool verbose=fals
 
   pl0_residualY->GetXaxis()->SetTitle("Y residual [mm]");
   pl0_residualY->Draw();
-  RootWImage*  pl0_residualY_img = new RootWImage(myCanvas, ww, wh);
+  RootWImage*  pl0_residualY_img = new RootWImage(myCanvas, ww, wh, tracksSubDir);
   myContent->addItem(pl0_residualY_img);
 
 
@@ -1271,7 +1297,7 @@ RootWContent* procTrackEvt(string base_name, TFile *f, bool verbose=false) {
     
     myCanvas->cd();
     EUFit->Draw("EvtNr");
-    RootWImage*  EvtNr_img = new RootWImage(myCanvas, ww, wh);
+    RootWImage*  EvtNr_img = new RootWImage(myCanvas, ww, wh, tracksSubDir);
     myContent->addItem(EvtNr_img);
     return myContent; 
   }
