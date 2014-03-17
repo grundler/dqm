@@ -21,9 +21,18 @@ import process
 import publish
 import index
 
+import logging
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s: %(name)s - %(levelname)s: %(message)s', '%H:%M:%S')
+ch.setFormatter(formatter)
+log.addHandler(ch)
 
 max_submissions = 5
-begin_valid_run = 174100
+begin_valid_run = 175700
+loop_back = 100
 
 def main():
     parser = OptionParser(usage="usage: %prog [options]")
@@ -76,11 +85,13 @@ def default(eos_mounted=False, batch=False):
 
     submissions = 0 #counter for how many jobs we've submitted
 
-    if debug:
-        sys.stdout.write('Getting runs\n')
+    log.debug('Getting runs')
+    # if debug:
+    #     sys.stdout.write('Getting runs\n')
     runs = utils.get_runs(eos_mounted)
     runs = sorted(runs, reverse=True)
-    sys.stdout.write('Got %s runs\n' % len(runs))
+    log.info('Got %s runs', len(runs))
+    # sys.stdout.write('Got %s runs\n' % len(runs))
 
     #loop over all the runs we found
     for run in runs:
@@ -88,8 +99,9 @@ def default(eos_mounted=False, batch=False):
             break
         datfile = utils.get_datfile_names(run, eos_mounted)
         if not datfile:
-            if debug: 
-                sys.stdout.write('No dat file for run %s.\n' %run) 
+            log.debug('No dat file for run %s', run)
+            # if debug: 
+            #     sys.stdout.write('No dat file for run %s.\n' %run) 
             continue
 
         #Each run may have several dat files, loop over them.
@@ -99,19 +111,20 @@ def default(eos_mounted=False, batch=False):
             #check status of processing
             for job in range(JOBS.nJobs):
                 status = utils.get_job_status(job, dat)
-                if debug:
-                    sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
+                log.debug('Run: %s\tboard: %s\tjob: %s\tstatus: %s' , run, board, JOBS.prefix[job], STATUS.prefix[status])
+                # if debug:
+                #     sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
                 if status == STATUS.published:
-                    if debug: 
-                        sys.stdout.write('Nothing more to do for this job, moving on\n')
+                    # if debug: 
+                    #     sys.stdout.write('Nothing more to do for this job, moving on\n')
                     continue #continue to next job
                 elif status == STATUS.returned:
-                    if debug: 
-                        sys.stdout.write('Job returned. Publishing\n')
+                    # if debug: 
+                    #     sys.stdout.write('Job returned. Publishing\n')
                     publish_job(job, run, board, dat, eos_mounted)
                 elif status == STATUS.submitted:
-                    if debug: 
-                        sys.stdout.write('Waiting for job to finish processing\n')
+                    # if debug: 
+                    #     sys.stdout.write('Waiting for job to finish processing\n')
                     break #can't go on with this run until this job is done
                 elif submissions < max_submissions:
                     #Need to submit the job
@@ -125,7 +138,8 @@ def default(eos_mounted=False, batch=False):
         utils.umount_eos(eos_mount_point)
 
     index.index()
-    sys.stdout.write('Submitted %s jobs\n' % submissions)
+    log.info('Submitted %s jobs', submissions)
+    # sys.stdout.write('Submitted %s jobs\n' % submissions)
 
 
 def loop_processing(eos_mounted=False, batch=False):
@@ -139,26 +153,28 @@ def loop_processing(eos_mounted=False, batch=False):
     try:
         while True:
             restart = False
-            sys.stdout.write('Sleeping for just a second. Now would be a good time to interrupt\n')
-            sys.stdout.flush()
+            log.info('Sleeping for just a second. Now would be a good time to interrupt')
+            # sys.stdout.write('Sleeping for just a second. Now would be a good time to interrupt\n')
+            # sys.stdout.flush()
             time.sleep(1)
 
-            if debug:
-                sys.stdout.write('Getting runs\n')
             runs = utils.get_runs(eos_mounted)
             runs = sorted(runs, reverse=True)
-            sys.stdout.write('Got %s runs\n' % len(runs))
+            latest_run = runs[0]
+            log.info('Got %s runs', len(runs))
+            # sys.stdout.write('Got %s runs\n' % len(runs))
 
             #loop over all the runs we found
             for run in runs:
                 if restart:
                     break
-                if run < begin_valid_run:
+                if run < latest_run - loop_back: #begin_valid_run:
                     break
                 datfile = utils.get_datfile_names(run, eos_mounted)
                 if not datfile:
-                    if debug: 
-                        sys.stdout.write('No dat file for run %s.\n' %run) 
+                    log.debug('No dat file for run %s', run)
+                    # if debug: 
+                    #     sys.stdout.write('No dat file for run %s.\n' %run) 
                     continue
 
                 #Each run may have several dat files, loop over them.
@@ -168,8 +184,9 @@ def loop_processing(eos_mounted=False, batch=False):
                     #check status of processing
                     for job in range(JOBS.nJobs):
                         status = utils.get_job_status(job, dat)
-                        if debug:
-                            sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
+                        log.debug('Run: %s\tboard: %s\tjob: %s\tstatus: %s', run, board, JOBS.prefix[job], STATUS.prefix[status])
+                        # if debug:
+                        #     sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
                         if status == STATUS.submitted:
                             break #don't allow going to next job if not ready
                         elif status == STATUS.unknown:
@@ -180,13 +197,15 @@ def loop_processing(eos_mounted=False, batch=False):
                                 break
 
     except KeyboardInterrupt:
-        sys.stdout.write('ProcessingInterrupted\n')
+        log.warning('Processing Interrupted')
+        # sys.stdout.write('ProcessingInterrupted\n')
 
     #finish up
     if eos_mounted:
         utils.umount_eos(eos_mount_point)
 
-    sys.stdout.write('Submitted %s jobs\n' % submissions)
+    log.info('Processed %s jobs', submissions)
+    # sys.stdout.write('Submitted %s jobs\n' % submissions)
 
 def loop_publishing(eos_mounted=False, batch=False):
     #Start by mounting the eos directory, so we can do 'ls', 'ln -s', etc.
@@ -198,27 +217,29 @@ def loop_publishing(eos_mounted=False, batch=False):
 
     try:
         while True:
-            restart = 5
-            sys.stdout.write('Sleeping for just a second. Now would be a good time to interrupt\n')
-            sys.stdout.flush()
+            restart = 3
+            log.info('Sleeping for just a second. Now would be a good time to interrupt')
+            # sys.stdout.write('Sleeping for just a second. Now would be a good time to interrupt\n')
+            # sys.stdout.flush()
             time.sleep(1)
 
-            if debug:
-                sys.stdout.write('Getting runs\n')
             runs = utils.get_runs(eos_mounted)
             runs = sorted(runs, reverse=True)
-            sys.stdout.write('Got %s runs\n' % len(runs))
+            latest_run = runs[0]
+            log.info('Got %s runs', len(runs))
+            # sys.stdout.write('Got %s runs\n' % len(runs))
 
             #loop over all the runs we found
             for run in runs:
                 if restart == 0:
                     break
-                if run < begin_valid_run:
+                if run < latest_run - loop_back: #begin_valid_run:
                     break
                 datfile = utils.get_datfile_names(run, eos_mounted)
                 if not datfile:
-                    if debug: 
-                        sys.stdout.write('No dat file for run %s.\n' %run) 
+                    log.debug('No dat file for run %s', run)
+                    # if debug: 
+                    #     sys.stdout.write('No dat file for run %s.\n' %run) 
                     continue
 
                 #Each run may have several dat files, loop over them.
@@ -228,15 +249,16 @@ def loop_publishing(eos_mounted=False, batch=False):
                     #check status of processing
                     for job in range(JOBS.nJobs):
                         status = utils.get_job_status(job, dat)
-                        if debug:
-                            sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
+                        log.debug('Run: %s\tboard: %s\tjob: %s\tstatus: %s', run, board, JOBS.prefix[job], STATUS.prefix[status])
+                        # if debug:
+                        #     sys.stdout.write('Run: %s\tboard: %s\tjob: %s\tstatus: %s\n' %(run,board,JOBS.prefix[job],STATUS.prefix[status]))
                         if status == STATUS.published:
-                            if debug: 
-                                sys.stdout.write('Nothing more to do for this job, moving on\n')
+                            # if debug: 
+                            #     sys.stdout.write('Nothing more to do for this job, moving on\n')
                             continue #continue to next job
                         elif status == STATUS.returned:
-                            if debug: 
-                                sys.stdout.write('Job returned. Publishing\n')
+                            # if debug: 
+                            #     sys.stdout.write('Job returned. Publishing\n')
                             publish_job(job, run, board, dat, eos_mounted)
                             submissions += 1
                             restart -= 1
@@ -244,18 +266,21 @@ def loop_publishing(eos_mounted=False, batch=False):
                             break #if this job's not returned, other one can't be either
 
     except KeyboardInterrupt:
-        sys.stdout.write('Publishing Interrupted\n')
+        log.warning('Publishing Interrupted')
+        # sys.stdout.write('Publishing Interrupted\n')
 
     #finish up
     if eos_mounted:
         utils.umount_eos(eos_mount_point)
 
-    sys.stdout.write('Published %s jobs\n' % submissions)
+    log.info('Published %s jobs', submissions)
+    # sys.stdout.write('Published %s jobs\n' % submissions)
 
 
 ####
 
 def process_job(job, filename, eos_mounted=False, batch=False):
+    log.info('process_job: %s - %s', filename, JOBS.prefix[job])
 	#First, make sure no other process tries to submit
     f = utils.db_file_name(filename, job, STATUS.submitted, insert=True)
 
@@ -272,11 +297,15 @@ def process_job(job, filename, eos_mounted=False, batch=False):
                                 eos_mounted=eos_mounted, add_to_db=f,
                                 queue=JOBS.queues[job], suffix='-'+JOBS.prefix[job], script_dir=submit_dir)
 
+    log.info('process_job finished: %s - %s', filename, job)
+
 def publish_job(job, run, board, filename, eos_mounted=False):
+    log.info('publish_job: Run %s %s - %s', str(run), board, job)
 	#First, make sure no other process tries to submit
     f = utils.db_file_name(filename, job, STATUS.published, insert=True)
 
     publish.publish(run, board, eos_mounted=eos_mounted)
+    log.info('publish_job finished: Run %s %s - %s', str(run), board, job)
 
 ####
 
