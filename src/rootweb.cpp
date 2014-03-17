@@ -279,6 +279,14 @@ string RootWImage::saveFiles(int smallWidth, int smallHeight) {
   if (relativeHtmlDirectory_ == "") relativeHtmlDirectory_ = ".";
   if (targetDirectory_ == "" ) targetDirectory_ = ".";
 
+  string subdir = targetDirectory_ + "/" + relativeHtmlDirectory_;
+  if (!boost::filesystem::exists( subdir )) {
+     if (!boost::filesystem::create_directory(subdir)) {
+        cerr << "Couldn't create directory " << subdir << endl;
+        return 0;
+     }
+  }
+
   if (!myCanvas_) return "";
 
   //string canvasName = myCanvas_->GetName();

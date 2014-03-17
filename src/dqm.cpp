@@ -435,27 +435,6 @@ int main(int argc, char** argv) {
       cerr << "Couldn't create directory " << targetDirectory << endl;
       return 0;
     }
-    string subdir = targetDirectory + "/" + convertSubDir;
-    if (!boost::filesystem::exists( subdir )) {
-       if (!boost::filesystem::create_directory(subdir)) {
-          cerr << "Couldn't create directory " << subdir << endl;
-          return 0;
-       }
-    }
-    subdir = targetDirectory + "/" + clusterSubDir;
-    if (!boost::filesystem::exists( subdir )) {
-       if (!boost::filesystem::create_directory(subdir)) {
-          cerr << "Couldn't create directory " << subdir << endl;
-          return 0;
-       }
-    }
-    subdir = targetDirectory + "/" + tracksSubDir;
-    if (!boost::filesystem::exists( subdir )) {
-       if (!boost::filesystem::create_directory(subdir)) {
-          cerr << "Couldn't create directory " << subdir << endl;
-          return 0;
-       }
-    }
   }
 
   // targetDirectory += "/" + data_type + "_" + run_number;
