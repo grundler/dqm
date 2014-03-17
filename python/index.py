@@ -17,9 +17,6 @@ def index():
     procenv = utils.source_bash(dqm_env_file)
     targetdir = procenv['TARGETDIRECTORY']
 
-    if debug: 
-        sys.stdout.write('\tget db files\n')
-    sys.stdout.flush()
     #runs = []
     run_status = {}
     
