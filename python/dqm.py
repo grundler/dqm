@@ -40,10 +40,11 @@ def main():
                         action="store",
                         dest="runs",
                         help="set runs to process, not yet operational")
-    # parser.add_option("-b", "--board",
-    #                     action="store",
-    #                     dest="board",
-    #                     help="Set board for run")
+    parser.add_option("-c", "--clear",
+                        action="store_true",
+                        dest="clear",
+                        default=False,
+                        help="set runs to process, not yet operational")
     parser.add_option("-e", "--eos_mounted",
                         action="store_true",
                         dest="eos_mounted",
@@ -70,6 +71,10 @@ def main():
     if ( len(args) == 1 and
         args[0] == 'default' ):
         default(eos_mounted=False, batch=True)
+    elif options.clear:
+        if not options.runs:
+            parser.error('Need run number to clear')
+        clear_status(options.runs)
     elif options.processloop:
         loop_processing(options.eos_mounted, options.batch)
     elif options.publishloop:
@@ -306,6 +311,33 @@ def publish_job(job, run, board, filename, eos_mounted=False):
 
     publish.publish(run, board, eos_mounted=eos_mounted)
     log.info('publish_job finished: Run %s %s - %s', str(run), board, job)
+
+def clear_status(run, boardname=None, jobname=None, statusname=None):
+    log.debug('Clearing status for run %s', run)
+    files = utils.get_datfile_names(run)
+
+    for dat in files:
+        #log.debug('dat: %s', dat)
+        board = utils.get_board(dat) 
+        if boardname is not None:
+            if board != boardname:
+                #log.debug('Do not touch %s', board)
+                continue
+
+        for job in range(JOBS.nJobs):
+            if jobname is not None:
+                if JOBS.prefix[job] != jobname:
+                    #log.debug('Do not touch %s', JOBS.prefix[job])
+                    continue
+            
+            for status in range(STATUS.nStatus):
+                if statusname is not None:
+                    if STATUS.prefix[status] != statusname:
+                        #log.debug('Do not touch %s', STATUS.prefix[status])
+                        continue
+
+                f = utils.db_file_name(dat,job,status,remove=True)
+                #log.debug('Removed %s', f)
 
 ####
 
