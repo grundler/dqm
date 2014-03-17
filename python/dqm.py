@@ -167,7 +167,11 @@ def loop_processing(eos_mounted=False, batch=False):
 
             runs = utils.get_runs(eos_mounted)
             runs = sorted(runs, reverse=True)
-            latest_run = runs[0]
+            try:
+                latest_run = runs[0]
+            except IndexError:
+                log.error('List index out of range?! No runs?! runs: %s', runs)
+
             log.info('Got %s runs', len(runs))
             # sys.stdout.write('Got %s runs\n' % len(runs))
 
@@ -232,7 +236,11 @@ def loop_publishing(eos_mounted=False, batch=False):
 
             runs = utils.get_runs(eos_mounted)
             runs = sorted(runs, reverse=True)
-            latest_run = runs[0]
+            try:
+                latest_run = runs[0]
+            except IndexError:
+                log.error('List index out of range?! No runs?! runs: %s', runs)
+
             log.info('Got %s runs', len(runs))
             # sys.stdout.write('Got %s runs\n' % len(runs))
 
