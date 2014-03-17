@@ -208,7 +208,11 @@ def get_filesize(f, eos_mounted=True):
         cmd = '%s ls -l %s' % (eos, f)
     output = proc_cmd(cmd)
     items = output.split()
-    size = items[4]
+    try:
+        size = items[4]
+    except IndexError:
+        sys.stdout.write('ERROR: no size information: cmd was %s\n\toutput was %s\n\titems: %s\n' % (cmd, output, items))
+        return 0
     if not size.isdigit(): 
         sys.stdout.write('WARNING: not able to get file size \n')
         raise NameError(output)
