@@ -4,6 +4,9 @@ import os
 import subprocess
 #from datetime import datetime
 
+import logging
+log = logging.getLogger(__name__)
+
 from config import *
 
 default_mount_point = '/tmp/tracktb'
@@ -86,7 +89,8 @@ def mount_eos(mount_point=default_mount_point):
 
     cmd = '%s -b fuse mount %s/eos' % (eos, mount_point)
     output = proc_cmd(cmd)
-    sys.stdout.write('%s' % output)
+    log.info('%s', output)
+    #sys.stdout.write('%s' % output)
 
     global daqdir
     daqdir = os.path.join(mount_point, eosdir)
@@ -96,7 +100,8 @@ def umount_eos(mount_point=default_mount_point):
     daqdir = '/'+eosdir
 
     if not os.path.exists(mount_point+"/eos"):
-        sys.stdout.write('WARNING: Cannot find a point at %s to unmount\n' % mount_point)
+        log.warning('Cannot find a point at %s to unmount', mount_point)
+        #sys.stdout.write('WARNING: Cannot find a point at %s to unmount\n' % mount_point)
         return
 
     cmd = '%s -b fuse umount %s/eos' % (eos, mount_point)
@@ -105,6 +110,7 @@ def umount_eos(mount_point=default_mount_point):
     #proc_cmd(cmd)
 
 def get_datfile_names(run, eos_mounted=False):
+    log.debug('Getting dat files for run %s', str(run))
     # sys.stdout.write('getting dat files\n')
     # sys.stdout.flush()
 
@@ -166,14 +172,13 @@ def cp_dat(dat, copyto_dir):
     
     #cmd = '%s cp %s %s' %(eos, dat, copyto_dir)
     cmd = 'xrdcp -f root://eoscms//%s %s/' % (dat, copyto_dir)
-    sys.stdout.write('%s\n' % cmd)
-    sys.stdout.flush()
+    log.debug('%s', cmd)
+    # sys.stdout.write('%s\n' % cmd)
+    # sys.stdout.flush()
     output, rc = proc_cmd(cmd, get_returncode=True)
-    sys.stdout.write('%s\n' % output)
-    sys.stdout.flush()
-    # if debug:
-    #     print cmd 
-    #     print output 
+    log.debug('%s', output)
+    # sys.stdout.write('%s\n' % output)
+    # sys.stdout.flush()
     return rc
 
 
@@ -195,7 +200,8 @@ def proc_cmd(cmd, test=False, verbose=1, procdir=None, env=os.environ, get_retur
     stdout = process.communicate()[0]
     rc = process.returncode
     if 'error' in stdout:
-        sys.stdout.write(stdout)
+        log.error(stdout)
+        #sys.stdout.write(stdout)
     if procdir != None:
         os.chdir(cwd)
     if get_returncode:
@@ -211,10 +217,12 @@ def get_filesize(f, eos_mounted=True):
     try:
         size = items[4]
     except IndexError:
-        sys.stdout.write('ERROR: no size information: cmd was %s\n\toutput was %s\n\titems: %s\n' % (cmd, output, items))
+        log.error('no size information: cmd was %s\n\toutput was %s\n\titems: %s', cmd, output, items)
+        #sys.stdout.write('ERROR: no size information: cmd was %s\n\toutput was %s\n\titems: %s\n' % (cmd, output, items))
         return 0
     if not size.isdigit(): 
-        sys.stdout.write('WARNING: not able to get file size \n')
+        log.warning('not able to get file size')
+        #sys.stdout.write('WARNING: not able to get file size \n')
         raise NameError(output)
     size = int(size)
     return size 

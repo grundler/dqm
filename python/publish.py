@@ -4,6 +4,9 @@ import sys
 import os
 from optparse import OptionParser
 
+import logging
+log = logging.getLogger(__name__)
+
 from config import *
 import utils
 
@@ -47,8 +50,9 @@ def main():
 def publish(run, board, 
             workingdir=default_publish_dir, eos_mounted=False, add_to_db=None):
 
-    sys.stdout.write('[pub_dqm] run %s ... ' % run)
-    sys.stdout.flush()
+    log.info('Publish run %s', str(run))
+    # sys.stdout.write('[pub_dqm] run %s ... ' % run)
+    # sys.stdout.flush()
 
     if add_to_db is not None:
         open(add_to_db,'a').close()
@@ -64,9 +68,11 @@ def publish(run, board,
 
     cmd = 'dqm %s %s' %(board, str(run).zfill(6))
     output = utils.proc_cmd(cmd, procdir=histdir, env=procenv)
-    if debug:
-        print output
-    sys.stdout.write(' OK.\n')
+    log.debug(output)
+    # if debug:
+    #     print output
+    log.info('Finished publishing')
+    # sys.stdout.write(' OK.\n')
 
     if eos_mounted:
         if really_mount:
@@ -75,9 +81,10 @@ def publish(run, board,
         clean_working_directory(workingdir, run)
 
 def copy_from_eos(workdir, eos_out, run, board):
-    if debug:
-        sys.stdout.write('Copying necessary root files for run %s\n' % str(run))
-        sys.stdout.flush()
+    log.debug('Copying necessary root files for run %s', str(run))
+    # if debug:
+    #     sys.stdout.write('Copying necessary root files for run %s\n' % str(run))
+    #     sys.stdout.flush()
     rootfilenames = ['clustering', 'convert', 'hitmaker', 'tracks_prealign']
     lciofilenames = ['decoding.txt']
 
@@ -103,27 +110,26 @@ def copy_from_eos(workdir, eos_out, run, board):
         utils.proc_cmd(cmd)
 
 def clean_working_directory(myDir, run):
-    if debug:
-        sys.stdout.write('Cleaning working directory at %s of run %s files\n' % (myDir, str(run)))
-        sys.stdout.flush()
-    if debug:
-        sys.stdout.write('Cleaning %s of files for run %s\n' % (myDir, str(run)))
-        sys.stdout.flush()
+    log.debug('Cleaning %s of files for run %s', myDir, str(run))
+    # if debug:
+    #     sys.stdout.write('Cleaning %s of files for run %s\n' % (myDir, str(run)))
+    #     sys.stdout.flush()
 
     subdirs = ['histograms', 'lcio']
     for subdir in subdirs:
         fullpath_to_dir = os.path.join(myDir, subdir)
         cmd = 'ls -1 %s' % fullpath_to_dir
         output, rc = utils.proc_cmd(cmd, get_returncode=True)
-        if debug:
-            sys.stdout.write('rc: %d\toutput: %s\n' % (rc, output))
-            sys.stdout.flush()
+        log.debug('rc: %d\toutput: %s\n' % (rc, output))
+        # if debug:
+        #     sys.stdout.write('rc: %d\toutput: %s\n' % (rc, output))
+        #     sys.stdout.flush()
         for line in output.split():
             if str(run).zfill(6) in line:
                 try:
-                    if debug:
-                        sys.stdout.write('removing %s\n' % line)
-                        sys.stdout.flush()
+                    # if debug:
+                    #     sys.stdout.write('removing %s\n' % line)
+                    #     sys.stdout.flush()
                     os.remove(os.path.join(fullpath_to_dir,line))
                 except OSError as e:
                     if e.errno != errno.ENOENT:

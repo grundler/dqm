@@ -14,6 +14,9 @@ import shutil
 #from datetime import datetime
 from optparse import OptionParser
 
+import logging
+log = logging.getLogger(__name__)
+
 from config import *
 import utils
 
@@ -155,9 +158,10 @@ def process_dat(datfile, modes,
 
 
 def create_working_directory(myDir, run, board=None):
-    if debug:
-        sys.stdout.write('Creating working directory at %s for run %s\n' % (myDir, str(run)))
-        sys.stdout.flush()
+    log.debug('Creating working directory at %s for run %s', myDir, str(run))
+    # if debug:
+    #     sys.stdout.write('Creating working directory at %s for run %s\n' % (myDir, str(run)))
+    #     sys.stdout.flush()
     basedir = myDir
     if board is not None:
         basedir = os.path.join(myDir,board)
@@ -175,9 +179,10 @@ def create_working_directory(myDir, run, board=None):
     return basedir
 
 def clean_working_directory(myDir, run, board=None):
-    if debug:
-        sys.stdout.write('Cleaning %s of files for run %s\n' % (myDir, str(run)))
-        sys.stdout.flush()
+    log.debug('Cleaning %s of files for run %s', myDir, str(run))
+    # if debug:
+    #     sys.stdout.write('Cleaning %s of files for run %s\n' % (myDir, str(run)))
+    #     sys.stdout.flush()
 
     basedir = myDir
     if board is not None:
@@ -191,61 +196,60 @@ def clean_working_directory(myDir, run, board=None):
         fullpath_to_dir = os.path.join(basedir, subdir)
         cmd = 'ls -1 %s' % fullpath_to_dir
         output, rc = utils.proc_cmd(cmd, get_returncode=True)
-        if debug:
-            sys.stdout.write('rc: %d\toutput: %s\n' % (rc, output))
-            sys.stdout.flush()
         for line in output.split():
             if str(run).zfill(6) in line:
                 try:
-                    if debug:
-                        sys.stdout.write('removing %s\n' % line)
-                        sys.stdout.flush()
                     os.remove(os.path.join(fullpath_to_dir,line))
                 except OSError as e:
                     if e.errno != errno.ENOENT:
                         raise
 
 def create_data_link(link_from_dir, filename, workdir, run):
-    if debug:
-        sys.stdout.write('Linking dat file for run %s\n' % str(run))
-        sys.stdout.flush()
+    log.debug('Linking dat file for run %s', str(run))
+    # if debug:
+    #     sys.stdout.write('Linking dat file for run %s\n' % str(run))
+    #     sys.stdout.flush()
 
     rundir = os.path.join(workdir,'data','cmspixel',str(run).zfill(6))
     cmd = 'ln -sf %s mtb.bin' % os.path.join(link_from_dir,filename)
     output = utils.proc_cmd(cmd,procdir=rundir)
     if not os.path.exists(os.readlink(os.path.join(rundir,'mtb.bin'))):
-        sys.stdout.write('mtb.bin is broken symlink\n')
+        log.error('mtb.bin is broken symlink')
+        # sys.stdout.write('mtb.bin is broken symlink\n')
     
 def submit(workdir, modes, run, cfg_file):
-    sys.stdout.write('Start analysis of run %s with modes - %s\n' % (run, modes))
-    sys.stdout.write('\tWork from: %s\n' % workdir)
-    sys.stdout.flush()
+    log.info('Start analysis of run %s with modes - %s', run, modes)
+    log.info('\tWork from: %s', workdir)
+    # sys.stdout.write('Start analysis of run %s with modes - %s\n' % (run, modes))
+    # sys.stdout.write('\tWork from: %s\n' % workdir)
+    # sys.stdout.flush()
 
 	#source environment for running
     procenv = utils.source_bash(analysis_env_file)
 
 	#actually run
     for mode in modes:
-        sys.stdout.write('\nProcessing: jobsub -c %s %s %s\n' % (cfg_file, mode, run))
-        sys.stdout.flush()
+        log.info('Processing: jobsub -c %s %s %s', cfg_file, mode, run)
+        # sys.stdout.write('\nProcessing: jobsub -c %s %s %s\n' % (cfg_file, mode, run))
+        # sys.stdout.flush()
 
         cmd = 'jobsub -c %s %s %s' % (cfg_file, mode, run)
         output = utils.proc_cmd(cmd, procdir=workdir, env=procenv)
 
-        sys.stdout.write('OK\n')
-
-    sys.stdout.write('End analysis of %s: modes - %s\n' % (run, modes))
-    sys.stdout.flush()
+    log.info('End analysis of %s: modes - %s', run, modes)
+    # sys.stdout.write('End analysis of %s: modes - %s\n' % (run, modes))
+    # sys.stdout.flush()
 
 def get_config(config_file_path, dest_dir, board, nevents, outpath):
-    if debug:
-        sys.stdout.write('Getting configuration file\n')
-        sys.stdout.flush()
+    # if debug:
+    #     sys.stdout.write('Getting configuration file\n')
+    #     sys.stdout.flush()
 
     fname = config_file_path.rpartition('/')[2]
     fpath = os.path.join(dest_dir,fname)
 
-    sys.stdout.write('\tCopying config file from %s to %s\n' % (config_file_path, fpath))
+    log.debug('Copying config file from %s to %s', config_file_path, fpath)
+    #sys.stdout.write('\tCopying config file from %s to %s\n' % (config_file_path, fpath))
 
     original = open(config_file_path,'r')
     modified = open(fpath, 'w')
@@ -270,9 +274,10 @@ def get_config(config_file_path, dest_dir, board, nevents, outpath):
     return fpath
 
 def copy_to_eos(workdir, eos_out, run, board):
-    if debug:
-        sys.stdout.write('Copying output files for run %s to eos\n' % str(run))
-        sys.stdout.flush()
+    log.debug('Copying output files for run %s to eos', str(run))
+    # if debug:
+    #     sys.stdout.write('Copying output files for run %s to eos\n' % str(run))
+    #     sys.stdout.flush()
 
     outputdirs = [ 'databases', 'histograms', 'lcio', 'logs']
 
@@ -288,9 +293,10 @@ def copy_to_eos(workdir, eos_out, run, board):
 
 #copy any slcio files we might need
 def copy_from_eos(workdir, eos_out, run, board):
-    if debug:
-        sys.stdout.write('Copying slcio files for run %s from eos\n' % str(run))
-        sys.stdout.flush()
+    log.debug('Copying slcio files for run %s from eos', str(run))
+    # if debug:
+    #     sys.stdout.write('Copying slcio files for run %s from eos\n' % str(run))
+    #     sys.stdout.flush()
 
     slcio_databases = ['prealignment', 'reference']
     slcio_lcio = ['convert', 'clustering', 'hitmaker']
@@ -322,7 +328,8 @@ def process_batch(datfile, modes,
 
     #Submit job
     job_name = 'r'+str(run)+'b'+board[-1]+suffix[:2]
-    sys.stdout.write('Submitting %s to %s queue\n' % (script_name, queue))
+    log.info('Submitting %s to %s queue', script_name, queue)
+    #sys.stdout.write('Submitting %s to %s queue\n' % (script_name, queue))
     cmd = 'bsub -q %s -J %s -o %s.out %s' % (queue, job_name, job_name, script_name)
     utils.proc_cmd(cmd, procdir=script_dir)
 

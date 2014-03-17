@@ -22,13 +22,15 @@ import publish
 import index
 
 import logging
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s: %(name)s - %(levelname)s: %(message)s', '%H:%M:%S')
-ch.setFormatter(formatter)
-log.addHandler(ch)
+FORMAT = '%(asctime)s: %(name)s - %(levelname)s: %(message)s' 
+logging.basicConfig(format=FORMAT, level=logging.DEBUG)
+log = logging.getLogger("dqm")
+# log.setLevel(logging.DEBUG)
+# ch = logging.StreamHandler()
+# ch.setLevel(logging.DEBUG)
+# formatter = logging.Formatter('%(asctime)s: %(name)s - %(levelname)s: %(message)s', '%H:%M:%S')
+# ch.setFormatter(formatter)
+# log.addHandler(ch)
 
 max_submissions = 5
 begin_valid_run = 175700
