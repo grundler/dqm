@@ -354,7 +354,7 @@ def create_script(datfile, modes,
         submit_file.write(' -e')
     if add_to_db is not None:
         submit_file.write(' -d \'%s\'' % add_to_db)
-    submit_file.write(' %d\n' % run)
+    submit_file.write(' %s\n' % datfile)
     submit_file.close()
     cmd = 'chmod a+x %s' % script_name
     utils.proc_cmd(cmd)
