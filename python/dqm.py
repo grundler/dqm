@@ -46,7 +46,7 @@ def main():
                         action="store_true",
                         dest="clear",
                         default=False,
-                        help="set runs to process, not yet operational")
+                        help="Clear status of run defined using -r flag")
     parser.add_option("-e", "--eos_mounted",
                         action="store_true",
                         dest="eos_mounted",
@@ -321,6 +321,34 @@ def publish_job(job, run, board, filename, eos_mounted=False):
 
     publish.publish(run, board, eos_mounted=eos_mounted)
     log.info('publish_job finished: Run %s %s - %s', str(run), board, job)
+
+def get_range_from_str(val, start=0, stop=None):
+
+    def get_range_hypen(val):
+        start = int(val.split('-')[0])
+        tmp_stop = val.split('-')[1]
+        if tmp_stop != '':
+            stop = int(val.split('-')[1])+1
+        return range(start, stop)
+
+    result = []
+    if '-' in val and ',' not in val:
+        result = get_range_hypen(val)
+        
+    elif ',' in val:
+        items = val.split(',')
+        for item in items:
+            if '-' in item:
+                result.extend(get_range_hypen(item))
+            else:
+                result.append(int(item))
+    else:
+        result.append(int(val))
+
+    #result = [ str(r).zfill(6) for r in result ]
+    result.sort()
+    return result
+
 
 def clear_status(run, boardname=None, jobname=None, statusname=None):
     log.debug('Clearing status for run %s', run)
