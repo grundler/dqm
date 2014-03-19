@@ -22,8 +22,10 @@ import publish
 import index
 
 import logging
+#LOGNAME = 'dqm-%s%s.log' % (os.getenv('HOSTNAME'), os.getenv('STY',''))
+DATEFMT = '%H:%M:%S'
 FORMAT = '%(asctime)s: %(name)s - %(levelname)s: %(message)s' 
-logging.basicConfig(format=FORMAT, level=logging.DEBUG)
+logging.basicConfig(format=FORMAT, datefmt=DATEFMT, level=logging.DEBUG)
 log = logging.getLogger("dqm")
 # log.setLevel(logging.DEBUG)
 # ch = logging.StreamHandler()
@@ -347,6 +349,7 @@ def get_range_from_str(val, start=0, stop=None):
 
     #result = [ str(r).zfill(6) for r in result ]
     result.sort()
+    log.debug('run list: %s', result)
     return result
 
 
